@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\GeneralTrait;
@@ -73,7 +74,7 @@ class AuthController extends Controller
         return $this->success([], "logged out");
     }
 
-    public function profile(Request $request)
+    public function show(Request $request)
     {
         if (!$request->id)
             return $this->success($this->getUserProfileData(Auth::user()));
@@ -81,7 +82,30 @@ class AuthController extends Controller
         return $this->success($this->getUserProfileData($user));
     }
 
-    public function getUserProfileData($user)
+    public function update(UserRegisterRequest $request)
+    {
+        $user = $request->user();
+        DB::beginTransaction();
+        $request->first_name ? ($request->first_name != $user->first_name ? $user->first_name = $request->first_name : false) : false;
+        $request->last_name ? ($request->last_name != $user->last_name ? $user->last_name = $request->last_name : false) : false;
+        $request->account_name ? ($request->account_name != $user->account_name ? $user->account_name = $request->account_name : false) : false;
+        $request->email ? ($request->email != $user->email ? $user->email = $request->email : false) : false;
+        $request->password ? $user->password = Hash::make($request->password) : false;
+        if ($request->hasFile('img')) {
+            $path = $this->storeFile($request->img, 'users/' . $user->id . "/profile_images", "public/assets/", 'public/assets/' . $user->img);
+            $user->img = $path;
+        }
+        $user->save();
+        DB::commit();
+        return $this->success($this->getUserProfileData($user), "Updated successfully!");
+    }
+
+    public function destroy(Request $request)
+    {
+        //
+    }
+
+    public function getUserProfileData(User $user): array
     {
         return [
             "id" => $user->id,
@@ -91,17 +115,7 @@ class AuthController extends Controller
             "email" => $user->email,
             "first_name" => $user->first_name,
             "last_name" => $user->last_name,
-            "img" => "storage/assets/" . ($user->img ?? "defaults/default_user.jpg"),
+            "img" => is_null($user->img) ? "storage/assets/" . ($user->img ?? "defaults/default_user.jpg") : "storage/assets/" . $user->img,
         ];
-    }
-
-    public function update(Request $request)
-    {
-        //
-    }
-
-    public function destroy(Request $request)
-    {
-        //
     }
 }

@@ -2,16 +2,20 @@
 
 namespace App\Traits;
 
-use App\Models\Notification;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 trait HelperTrait
 {
-    protected function storeFile($file, $path, $mainPath = "public/assets/")
+    /**
+     * @param \File $file
+     * @description Used to store files
+     * @return string $file_path
+     */
+    protected function storeFile($file, String $path, String $mainPath = "public/assets/", String $deletePath = null, Bool $isDir = false): string
     {
+        if ($deletePath)
+            !$isDir ? Storage::delete($deletePath) : Storage::deleteDirectory($deletePath);
         $destination_path = $mainPath . $path;
         $fileToStore = $file;
         $randomString = Str::random(30);

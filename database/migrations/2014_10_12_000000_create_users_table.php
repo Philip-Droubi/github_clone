@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->dateTime('last_seen')->nullable();
-            $table->string('img')->nullable()->default("defaults/default_user.jpg");
+            $table->string('img')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
