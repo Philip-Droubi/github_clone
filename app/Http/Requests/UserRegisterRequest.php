@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,6 +21,12 @@ class UserRegisterRequest extends FormRequest
 
     public function rules(): array
     {
+        if ($this->user() && $this->method() == "PUT" && $this->path() == "api/update_profile") return $this->updateRule();
+        return $this->registerRules();
+    }
+
+    public function registerRules(): array
+    {
         return [
             "first_name" => ["required", "string", "between:2,50"],
             "last_name" => ["required", "string", "between:2,50"],
@@ -31,9 +38,28 @@ class UserRegisterRequest extends FormRequest
                 ->symbols()
                 ->uncompromised(), "confirmed"],
             "email" => ["required", "string", "email", "unique:users,email"],
-            "img" => ["nullable", "file", "image", "max:1024", "dimensions:min_width=100,min_height=100,max_width=1000,max_height=1000", "mimes:png,jpg,jpeg,gif"]
+            "img" => ["nullable", "file", "image", "max:1024", "dimensions:min_width=100,min_height=100,max_width=1024,max_height=1024", "mimes:png,jpg,jpeg,gif"]
         ];
     }
+
+    public function updateRule(): array
+    {
+        $user = $this->user();
+        return [
+            "first_name" => ["nullable", "string", "between:2,50"],
+            "last_name" => ["nullable", "string", "between:2,50"],
+            "account_name" => ["nullable", "string", "between:6,100", Rule::unique('users', 'account_name')->ignore($user->id)],
+            "password" => ["nullable", "string", "max:255", Password::min(8)
+                ->letters()
+                ->mixedCase()
+                ->numbers()
+                ->symbols()
+                ->uncompromised(), "confirmed"],
+            "email" => ["nullable", "string", "email", Rule::unique('users', 'email')->ignore($user->id)],
+            "img" => ["nullable", "file", "image", "max:1024", "dimensions:min_width=100,min_height=100,max_width=1024,max_height=1024", "mimes:png,jpg,jpeg,gif"]
+        ];
+    }
+
     public function failedValidation(Validator $validator)
     {
         throw new HttpResponseException($this->fail($validator->errors()->first()));
