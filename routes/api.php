@@ -17,6 +17,7 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
     Route::controller(AuthController::class)->group(function () {
         Route::get("/logout", "logout");
         Route::get("/logoutAll", "logoutAllDevices");
+        Route::get("/users", "index");
         Route::get("/profile/{id?}", "show");
         Route::put("/update_profile", "update");
     });

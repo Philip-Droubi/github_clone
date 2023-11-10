@@ -14,10 +14,29 @@ use Illuminate\Support\Facades\Validator;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 use Carbon\Carbon;
+use App\Http\Resources\UserResource;
 
 class AuthController extends Controller
 {
     use GeneralTrait, HelperTrait;
+    public function index(Request $request)
+    {
+        $users = User::query();
+        if ($text = $request->search) {
+            $users->where(function ($query) use ($text) {
+                $query->where('first_name', 'SOUNDS LIKE', '%' . strtolower($text) . '%')
+                    ->orWhere('last_name', 'like', '%' . strtolower($text) . '%')
+                    ->orWhere('account_name', 'like', '%' . strtolower($text) . '%')
+                    ->orWhereRaw("concat(first_name,' ', last_name) SOUNDS LIKE '%$text%' ");
+            });
+        }
+        $users = $users->paginate(25);
+        $data = [];
+        foreach ($users as $user) {
+            $data[] = new UserResource($user);
+        }
+        return $this->success($data);
+    }
     public function register(UserRegisterRequest $request)
     {
         DB::beginTransaction();
@@ -37,7 +56,7 @@ class AuthController extends Controller
         $user->save();
         $data =  [
             "token" => $user->createToken($user->id . $user->first_name . Str::random(32))->plainTextToken,
-            ...$this->getUserProfileData($user),
+            "user" => new UserResource($user),
         ];
         DB::commit();
         return $this->success($data, "Welcome " . $user->first_name . "!", 201);
@@ -55,7 +74,7 @@ class AuthController extends Controller
             $user = $request->user();
             $data = [
                 "token" => $user->createToken($user->id . $user->first_name . Str::random(32))->plainTextToken,
-                ...$this->getUserProfileData($user),
+                "user" => new UserResource($user),
             ];
             return $this->success($data, "Welcome back " . $user->first_name . "!");
         }
@@ -77,9 +96,9 @@ class AuthController extends Controller
     public function show(Request $request)
     {
         if (!$request->id)
-            return $this->success($this->getUserProfileData(Auth::user()));
+            return $this->success(new UserResource(Auth::user()));
         if (!$user = User::find($request->id)) return $this->fail("Not found!", 404);
-        return $this->success($this->getUserProfileData($user));
+        return $this->success($user);
     }
 
     public function update(UserRegisterRequest $request)
@@ -97,25 +116,11 @@ class AuthController extends Controller
         }
         $user->save();
         DB::commit();
-        return $this->success($this->getUserProfileData($user), "Updated successfully!");
+        return $this->success(new UserResource($user), "Updated successfully!");
     }
 
     public function destroy(Request $request)
     {
         //
-    }
-
-    public function getUserProfileData(User $user): array
-    {
-        return [
-            "id" => $user->id,
-            "role" => $user->role,
-            "role_name" => $user->role == 1 ? "Admin" : "User",
-            "account_name" => $user->account_name,
-            "email" => $user->email,
-            "first_name" => $user->first_name,
-            "last_name" => $user->last_name,
-            "img" => is_null($user->img) ? "storage/assets/" . ($user->img ?? "defaults/default_user.jpg") : "storage/assets/" . $user->img,
-        ];
     }
 }
