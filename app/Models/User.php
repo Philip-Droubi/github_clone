@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\File\File;
 use App\Models\Group\Group;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -72,6 +73,16 @@ class User extends Authenticatable
     //relations
     public function groups()
     {
-        return $this->hasMany(Group::class);
+        return $this->hasMany(Group::class, 'created_by');
+    }
+
+    public function files()
+    {
+        return $this->hasMany(File::class, 'created_by');
+    }
+
+    public function filesReserved()
+    {
+        return $this->hasMany(File::class, 'reserved_by');
     }
 }

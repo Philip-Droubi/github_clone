@@ -24,10 +24,18 @@ trait HelperTrait
         return $path . "/" . $file_name;
     }
 
-    protected function generateUniqeKey($model, string $columnName, int $length = 32): string
+    protected function generateUniqeStringKey($model, string $columnName, int $length = 32): string
     {
         do {
             $uniqueKey = Str::random($length);
+        } while ($model::where($columnName, $uniqueKey)->first());
+        return $uniqueKey;
+    }
+
+    protected function generateUniqeNumericKey($model, string $columnName, int $min = 1100, int $max = 9900): string
+    {
+        do {
+            $uniqueKey = random_int($min, $max);
         } while ($model::where($columnName, $uniqueKey)->first());
         return $uniqueKey;
     }

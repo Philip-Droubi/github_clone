@@ -2,6 +2,7 @@
 
 namespace App\Models\Group;
 
+use App\Models\File\File;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,8 +31,13 @@ class Group extends Model
     }
 
     //relations
-    public function benfactor()
+    public function owner()
     {
-        return $this->belongsTo(User::class, 'benefactor_id');
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function files()
+    {
+        return $this->hasMany(File::class, 'group_id');
     }
 }
