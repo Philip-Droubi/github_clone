@@ -26,4 +26,16 @@ return [
     */
 
     "group_key_length" => 32,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Private File Storage Path
+    |--------------------------------------------------------------------------
+    | This value is used to define the folder where files should be stored as private files.
+    | Notice that changing the path will not effect files already stored
+    | in the system.
+    |
+    */
+
+    "private_path" => "app/private",
 ];

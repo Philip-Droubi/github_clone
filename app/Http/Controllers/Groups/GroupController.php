@@ -26,14 +26,15 @@ class GroupController extends Controller
         Group::create([
             "name" => $request->name,
             "description" => $request->description,
-            "group_key" => $this->generateUniqeKey(Group::class, 'group_key', Config::get('custom.group_key_length', 32)),
+            "group_key" => $this->generateUniqeStringKey(Group::class, 'group_key', Config::get('custom.group_key_length', 32)),
             "is_public" => false,
             "created_by" => auth()->user()->id,
         ]);
         DB::commit();
+        return $this->success();
     }
 
-    public function show(string $id)
+    public function show(Request $requet)
     {
         //
     }
