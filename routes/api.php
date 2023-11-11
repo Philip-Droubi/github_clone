@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Groups\GroupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,5 +21,13 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
         Route::get("/users", "index");
         Route::get("/profile/{id?}", "show");
         Route::put("/update_profile", "update");
+    });
+    Route::prefix("groups")->controller(GroupController::class)->group(function () {
+        Route::get("/", "index");
+        Route::get("/my_groups/{id?}", "getGroupsByID"); //user id
+        Route::get("/{id}", "show"); // group id or group key
+        Route::post("/", "store");
+        Route::put("/", "update");
+        Route::delete("/", "destroy");
     });
 });

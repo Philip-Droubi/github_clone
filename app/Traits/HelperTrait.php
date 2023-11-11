@@ -23,4 +23,12 @@ trait HelperTrait
         $savePath = $fileToStore->storeAs($destination_path, $file_name);
         return $path . "/" . $file_name;
     }
+
+    protected function generateUniqeKey($model, string $columnName, int $length = 32): string
+    {
+        do {
+            $uniqueKey = Str::random($length);
+        } while ($model::where($columnName, $uniqueKey)->first());
+        return $uniqueKey;
+    }
 }
