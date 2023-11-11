@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Group\Group;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -50,21 +51,27 @@ class User extends Authenticatable
 
     public function setFirstNameAttribute($value)
     {
-        $this->attributes['first_name'] = ucfirst(strtolower($value));
+        $this->attributes['first_name'] = ucfirst(strtolower(trim($value)));
     }
 
     public function setLastNameAttribute($value)
     {
-        $this->attributes['last_name'] = ucfirst(strtolower($value));
+        $this->attributes['last_name'] = ucfirst(strtolower(trim($value)));
     }
 
     public function setEmailAttribute($value)
     {
-        $this->attributes['email'] = strtolower($value);
+        $this->attributes['email'] = strtolower(trim($value));
     }
 
     public function setAccountNameAttribute($value)
     {
-        $this->attributes['account_name'] = strtolower(str_replace('@', '', $value));
+        $this->attributes['account_name'] = strtolower(str_replace(['@', ' '], ['', '_'], trim($value)));
+    }
+
+    //relations
+    public function groups()
+    {
+        return $this->hasMany(Group::class);
     }
 }
