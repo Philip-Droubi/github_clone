@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('description')->nullable();
-            $table->string('type');
+            $table->string('mime');
             $table->string('file_key')->unique();
             $table->foreignId('reserved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('path');

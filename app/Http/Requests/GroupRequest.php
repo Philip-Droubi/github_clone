@@ -18,7 +18,8 @@ class GroupRequest extends FormRequest
     public function rules(): array
     {
         if ($this->user() && $this->method() == "PUT" && str_contains($this->path(), "api/groups/")) return $this->updateRule();
-        if ($this->user() && $this->method() == "POST" && $this->path() == "api/groups") return $this->storeRules();
+        // elseif ($this->user() && $this->method() == "POST" && $this->path() == "api/groups") return $this->storeRules();
+        return $this->storeRules();
     }
 
     public function storeRules(): array

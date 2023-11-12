@@ -16,7 +16,8 @@ class GroupUser extends Model
         'user_id',
         'number_of_contributions',
         'last_contribution_at',
-        'removed_at'
+        'verified_at',
+        'removed_at',
     ];
 
     //relations
