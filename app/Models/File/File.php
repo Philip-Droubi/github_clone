@@ -15,7 +15,7 @@ class File extends Model
     protected $fillable = [
         'name',
         'description',
-        'type',
+        'mime',
         'reserved_by',
         'path',
         'file_key',
