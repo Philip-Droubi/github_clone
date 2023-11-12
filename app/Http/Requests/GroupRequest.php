@@ -26,6 +26,8 @@ class GroupRequest extends FormRequest
         return [
             "name" => ["required", "string", "between:2,50"],
             "desc" => ["nullable", "string", "max:255"],
+            "users_list" => ["nullable", "array"],
+            "users_list.*" => ["required", "exists:users,id"],
         ];
     }
 
@@ -35,6 +37,8 @@ class GroupRequest extends FormRequest
         return [
             "name" => ["required", "string", "between:2,50"],
             "desc" => ["nullable", "string", "max:255"],
+            "users_list" => ["nullable", "array"],
+            "users_list.*" => ["required", "exists:users,id"],
         ];
     }
     public function failedValidation(Validator $validator)
