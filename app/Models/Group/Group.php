@@ -40,4 +40,9 @@ class Group extends Model
     {
         return $this->hasMany(File::class, 'group_id');
     }
+
+    public function contributers()
+    {
+        return $this->hasMany(GroupUser::class, 'group_id');
+    }
 }
