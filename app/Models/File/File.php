@@ -16,6 +16,7 @@ class File extends Model
         'name',
         'description',
         'mime',
+        'size',
         'reserved_by',
         'path',
         'file_key',

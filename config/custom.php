@@ -29,6 +29,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | File Unique Key Length
+    |--------------------------------------------------------------------------
+    | This value is used to define the length of the random key genereted for each File.
+    | Notice that changing the key length will not effect Files
+    | generated before your edit.
+    |
+    */
+
+    "file_key_length" => 32,
+
+    /*
+    |--------------------------------------------------------------------------
     | Private File Storage Path
     |--------------------------------------------------------------------------
     | This value is used to define the folder where files should be stored as private files.
@@ -37,5 +49,5 @@ return [
     |
     */
 
-    "private_path" => "app/private",
+    "private_path" => "private",
 ];
