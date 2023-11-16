@@ -30,41 +30,64 @@ class GroupController extends Controller
     {
         DB::beginTransaction();
         $group = Group::create([
-            "name" => $request->name,
+            "name"        => $request->name,
             "description" => $request->desc,
-            "group_key" => $this->generateUniqeStringKey(Group::class, 'group_key', Config::get('custom.group_key_length', 32)),
-            "is_public" => false,
-            "created_by" => auth()->id(),
+            "group_key"   => $this->generateUniqeStringKey(Group::class, 'group_key', Config::get('custom.group_key_length', 32)),
+            "is_public"   => false,
+            "created_by"  => auth()->id(),
         ]);
         GroupUser::create([ //Add group owner
             "group_id" => $group->id,
-            "user_id" => auth()->id(),
+            "user_id"  => auth()->id(),
         ]);
         foreach ($request->users_list as $id) // Add all group members
             GroupUser::firstOrCreate([
                 "group_id" => $group->id,
-                "user_id" => $id,
+                "user_id"  => $id,
             ]);
         DB::commit();
         return $this->success(new GroupResource($group));
     }
 
-    public function show(Request $requet)
+    public function show(Request $request)
     {
-        //
+        //Omar
+
+        $group = Group::where(['group_key' => $request->group_key])->first();
+        if (is_null($group))
+            return $this->fail("Group with key '" . $request->id . "' not found.", 404);
+        if ($group->owner->id != auth()->id() || !in_array(auth()->id(), $group->contributers))
+            return $this->fail("You don't have access to this group.", 403);
+
+        return $this->success($group);
     }
 
     public function getMyGroups(Request $requet)
     {
-        $order = $requet->orderBy ?? "name";
-        $desc = $requet->desc ?? "desc";
-        $limit = $requet->limit ?? 20;
+        $order  = $requet->orderBy ?? "name";
+        $desc   = $requet->desc ?? "desc";
+        $limit  = $requet->limit ?? 20;
         $groups = Group::where("created_by", auth()->id())
             ->where("name", "LIKE", "%" . $requet->name . "%")
             ->orderBy($order, $desc)->paginate($limit);
-        $data = [];
+        $data   = [];
         foreach ($groups as $group) {
             $data[] = new GroupResource($group);
+        }
+        return $this->success($data);
+    }
+    public function getGroupsByID(Request $requet)
+    {
+        // Omar
+        $order  = $requet->orderBy ?? "name";
+        $desc   = $requet->desc ?? "desc";
+        $limit  = $requet->limit ?? 20;
+        $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
+            ->orderBy($order, $desc)->paginate($limit);
+        $data   = [];
+        foreach ($groups as $group) {
+            if (in_array($requet->id, $group->contributers))
+                $data[] = new GroupResource($group);
         }
         return $this->success($data);
     }
@@ -82,7 +105,7 @@ class GroupController extends Controller
                 if ($id != $group->created_by) // To not delete group owner
                     GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
             } else {
-                $user = User::find($id);
+                $user     = User::find($id);
                 $userName = $user->first_name . " " . $user->last_name;
                 throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
             }
@@ -91,7 +114,7 @@ class GroupController extends Controller
         foreach ($request->users_list as $id) {
             GroupUser::firstOrCreate([
                 "group_id" => $group->id,
-                "user_id" => $id,
+                "user_id"  => $id,
             ]);
         }
         DB::commit();
@@ -101,7 +124,8 @@ class GroupController extends Controller
     public function destroy(Request $request)
     {
         DB::beginTransaction();
-        if (!$group = Group::where(['group_key' => $request->group_key, "created_by" => auth()->id()])->first()) return $this->fail('Group not found!', 404);
+        if (!$group = Group::where(['group_key' => $request->group_key, "created_by" => auth()->id()])->first())
+            return $this->fail('Group not found!', 404);
         $name = $group->name;
         if (
             Group::query()->where('id', $group->id)->whereDoesntHave('files', function ($query) use ($request, $group) {
