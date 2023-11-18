@@ -18,7 +18,7 @@ class FileRequest extends FormRequest
 
     public function rules(): array
     {
-        // if ($this->user() && $this->method() == "PUT" && str_contains($this->path(), "api/files/")) return $this->updateRule();
+        if ($this->user() && $this->method() == "POST" && $this->path() == "api/files/check") return $this->checkInRule();
         // elseif ($this->user() && $this->method() == "POST" && $this->path() == "api/files") return $this->storeRules();
         return $this->storeRules();
     }
@@ -32,6 +32,14 @@ class FileRequest extends FormRequest
             "files_array.*" => ["file", "max:10240"], //At most 10MB of data at once
             "files_desc" => ["nullable", "array", "max:20"],
             "files_desc.*" => ["nullable", "string", "max:100"],
+        ];
+    }
+
+    public function checkInRule(): array
+    {
+        return [
+            "files_keys" => ["required", "array", "max:40"],
+            "files_keys.*" => ['required', 'string', 'exists:files,file_key'], //At most 10MB of data at once
         ];
     }
 
@@ -49,5 +57,12 @@ class FileRequest extends FormRequest
     public function failedValidation(Validator $validator)
     {
         throw new HttpResponseException($this->fail($validator->errors()->first()));
+    }
+
+    public function messages()
+    {
+        return [
+            "files_keys.*.exists" => "File not found"
+        ];
     }
 }

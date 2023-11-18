@@ -14,6 +14,10 @@ Route::group(['middleware' => ['try_catch', 'json', 'bots', 'apikey', 'xss']], f
     });
 });
 
+// Route::prefix("groups")->controller(GroupController::class)->group(function () { //TODO : DELETE
+//     Route::get("/clone/{group_key}", "cloneGroup");
+// });
+
 // Auth Needed
 Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'xss', 'lastseen']], function () {
     Route::controller(AuthController::class)->group(function () {
@@ -31,8 +35,11 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
         Route::post("/", "store");
         Route::put("/{group_key}", "update");
         Route::delete("/{group_key}", "destroy");
+        Route::get("/clone/{group_key}", "cloneGroup");
     });
     Route::prefix("files")->controller(FileController::class)->group(function () {
         Route::post("/", "store");
+        Route::post("/check", "checkIn");
+        Route::get("/checkout/{file_key}", "checkout");
     });
 });

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Exception;
+use ZipArchive;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 
@@ -40,11 +41,12 @@ class GroupController extends Controller
             "group_id" => $group->id,
             "user_id" => auth()->id(),
         ]);
-        foreach ($request->users_list as $id) // Add all group members
-            GroupUser::firstOrCreate([
-                "group_id" => $group->id,
-                "user_id" => $id,
-            ]);
+        if ($request->users_list)
+            foreach ($request->users_list as $id) // Add all group members
+                GroupUser::firstOrCreate([
+                    "group_id" => $group->id,
+                    "user_id" => $id,
+                ]);
         DB::commit();
         return $this->success(new GroupResource($group));
     }
@@ -77,23 +79,25 @@ class GroupController extends Controller
         $request->exists('desc') ? ($request->desc != $group->description ? $group->description = $request->desc : false) : false;
         $group->save();
         // Delete users
-        foreach ($request->deleted_users_list as $id) {
-            if (!File::query()->where(["group_id" => $group->id, "reserved_by" => $id])->first()) {
-                if ($id != $group->created_by) // To not delete group owner
-                    GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
-            } else {
-                $user = User::find($id);
-                $userName = $user->first_name . " " . $user->last_name;
-                throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
+        if ($request->deleted_users_list)
+            foreach ($request->deleted_users_list as $id) {
+                if (!File::query()->where(["group_id" => $group->id, "reserved_by" => $id])->first()) {
+                    if ($id != $group->created_by) // To not delete group owner
+                        GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
+                } else {
+                    $user = User::find($id);
+                    $userName = $user->first_name . " " . $user->last_name;
+                    throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
+                }
             }
-        }
         // Add new users
-        foreach ($request->users_list as $id) {
-            GroupUser::firstOrCreate([
-                "group_id" => $group->id,
-                "user_id" => $id,
-            ]);
-        }
+        if ($request->users_list)
+            foreach ($request->users_list as $id) {
+                GroupUser::firstOrCreate([
+                    "group_id" => $group->id,
+                    "user_id" => $id,
+                ]);
+            }
         DB::commit();
         return $this->success(new GroupResource($group), "updated");
     }
@@ -113,5 +117,15 @@ class GroupController extends Controller
         }
         DB::rollBack();
         return $this->fail('Cannot delete this group as one or more of its files are reserved', 400);
+    }
+
+    public function cloneGroup(Request $request)
+    {
+        if (!$group = Group::where('group_key', $request->group_key)->first()) return $this->fail('Group not found!', 404);
+        $files = File::where("group_id", $group->id)->get(['name', 'path']);
+        //TODO: Check if files reserved by users => then it could not be downloaded
+        if ($zipFile = $this->createZipFile($group->name, $files))
+            return response()->download($zipFile)->deleteFileAfterSend(true);
+        return $this->fail("Failed to create the zip file.", 500);
     }
 }

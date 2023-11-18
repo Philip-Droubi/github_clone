@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('files_log', function (Blueprint $table) {
             $table->id();
+            $table->string("action");
+            $table->text("additional_info")->nullable();
+            $table->tinyInteger("importance")->default(1); // 1->5
+            $table->foreignId('file_id')->constrained('files')->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }
