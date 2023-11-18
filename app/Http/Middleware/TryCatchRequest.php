@@ -17,7 +17,9 @@ class TryCatchRequest
         $response = $next($request);
         if (!empty($response->exception)) {
             DB::transactionLevel() == 2 ? DB::rollBack() : false;
-            return $this->fail($response->exception->getMessage() . " on_line: " . $response->exception->getLine() . "\n" . " Trace : " . $response->exception->__toString());
+            if (app()->environment() == "local")
+                return $this->fail($response->exception->getMessage() . " on_line: " . $response->exception->getLine() . "\n" . " Trace : " . $response->exception->__toString());
+            return $this->fail($response->exception->getMessage());
         }
         return $response;
     }

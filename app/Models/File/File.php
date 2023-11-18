@@ -44,4 +44,9 @@ class File extends Model
     {
         return $this->belongsTo(User::class, 'reserved_by');
     }
+
+    public function log()
+    {
+        return $this->hasMany(FileLog::class, 'file_id');
+    }
 }

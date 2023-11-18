@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\File\File;
+use App\Models\File\FileLog;
 use App\Models\Group\Group;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -70,6 +71,11 @@ class User extends Authenticatable
         $this->attributes['account_name'] = strtolower(str_replace(['@', ' '], ['', '_'], trim($value)));
     }
 
+    public function getFullName()
+    {
+        return $this->first_name . " " . $this->last_name;
+    }
+
     //relations
     public function groups()
     {
@@ -84,5 +90,10 @@ class User extends Authenticatable
     public function filesReserved()
     {
         return $this->hasMany(File::class, 'reserved_by');
+    }
+
+    public function filesLog()
+    {
+        return $this->hasMany(FileLog::class, 'user_id');
     }
 }
