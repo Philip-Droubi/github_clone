@@ -40,6 +40,7 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
     Route::prefix("files")->controller(FileController::class)->group(function () {
         Route::post("/", "store");
         Route::post("/check", "checkIn");
+        Route::post("/replace", "replaceFile");
         Route::get("/checkout/{file_key}", "checkout");
     });
 });

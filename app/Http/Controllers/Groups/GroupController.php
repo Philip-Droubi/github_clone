@@ -18,6 +18,7 @@ use Exception;
 use ZipArchive;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
+use Illuminate\Support\Facades\Storage;
 
 class GroupController extends Controller
 {
@@ -107,11 +108,13 @@ class GroupController extends Controller
         DB::beginTransaction();
         if (!$group = Group::where(['group_key' => $request->group_key, "created_by" => auth()->id()])->first()) return $this->fail('Group not found!', 404);
         $name = $group->name;
+        $id = $group->id;
         if (
             Group::query()->where('id', $group->id)->whereDoesntHave('files', function ($query) use ($request, $group) {
                 $query->where('group_id', $group->id)->whereNotNull('reserved_by');
             })->delete()
         ) {
+            Storage::disk("private")->deleteDirectory("groups/" . $id);
             DB::commit();
             return $this->success([], "Group '" . $name . "' has been successfully deleted!");
         }
