@@ -19,7 +19,7 @@ class FileRequest extends FormRequest
     public function rules(): array
     {
         if ($this->user() && $this->method() == "POST" && $this->path() == "api/files/check") return $this->checkInRule();
-        // elseif ($this->user() && $this->method() == "POST" && $this->path() == "api/files") return $this->storeRules();
+        elseif ($this->user() && $this->method() == "POST" && $this->path() == "api/files/replace") return $this->replaceRule();
         return $this->storeRules();
     }
 
@@ -39,21 +39,19 @@ class FileRequest extends FormRequest
     {
         return [
             "files_keys" => ["required", "array", "max:40"],
-            "files_keys.*" => ['required', 'string', 'exists:files,file_key'], //At most 10MB of data at once
+            "files_keys.*" => ['required', 'string', 'exists:files,file_key']
         ];
     }
 
-    // public function updateRule(): array
-    // {
-    //     $user = $this->user();
-    //     return [
-    //         "desc" => ["nullable", "string", "max:255"],
-    //         "files" => ["nullable", "array"],
-    //         "files.*" => ["file", File::atMost(10240)],
-    //         "deleted_files" => ["nullable", "array"],
-    //         "deleted_files.*" => ["required", "exists:files,file_key"],
-    //     ];
-    // }
+    public function replaceRule(): array
+    {
+        return [
+            "desc" => ["present", "nullable", "string", "max:255",],
+            "new_file" => ["nullable", "file", "max:10240"], //At most 10MB of data at once
+            "file_key" => ['required', 'string', 'exists:files,file_key,reserved_by,' . auth()->id()], //At most 10MB of data at once
+        ];
+    }
+
     public function failedValidation(Validator $validator)
     {
         throw new HttpResponseException($this->fail($validator->errors()->first()));
@@ -62,7 +60,8 @@ class FileRequest extends FormRequest
     public function messages()
     {
         return [
-            "files_keys.*.exists" => "File not found"
+            "files_keys.*.exists" => "File not found",
+            "files_keys.exists" => "File not found",
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Requests\FileRequest;
 use App\Models\File\File;
 use App\Models\Group\Group;
 use App\Models\Group\GroupUser;
+use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -28,23 +29,25 @@ class FileController extends Controller
     {
         $group = Group::where("group_key", $request->group_key)->first();
         $desc_id = 0;
-        if ($this->checkFilesNames($request->files_array, $group, $request)) {
+        $fileCreated = [];
+        if ($this->checkFilesNames($request->files_array, $group->id)) {
             foreach ($request->files_array as $file) {
-                if ($path = $this->storeFile($file, "/groups/" . $group->id . "/Files", Config::get("custom.private_path")));
-                $fileCreated[] = [ //Help in not create N+ query problem
-                    "name" => $file->getClientOriginalName(),
-                    "description" => $request->files_desc[$desc_id] ?? null,
-                    "mime" => $file->getClientOriginalExtension(),
-                    "size" => (float)$file->getSize() / 1024, //save in KB
-                    "reserved_by" => null,
-                    "path" => $path,
-                    "file_key" => $this->generateUniqeStringKey(File::class, "file_key", Config::get("custom.file_key_length")),
-                    "group_id" => $group->id,
-                    "created_by" => auth()->id(),
-                    "created_at" => Carbon::now()->format("Y-m-d H:i:s"),
-                    "updated_at" => Carbon::now()->format("Y-m-d H:i:s"),
-                ];
-                $desc_id++;
+                if ($path = $this->storeFile($file, "groups/" . $group->id . "/Files", Config::get("custom.private_path") . "/")) {
+                    $fileCreated[] = [ //Help in not create N+ query problem
+                        "name" => $file->getClientOriginalName(),
+                        "description" => $request->files_desc[$desc_id] ?? null,
+                        "mime" => $file->getClientOriginalExtension(),
+                        "size" => (float)round($file->getSize() / 1024, 3), //save in KB
+                        "reserved_by" => null,
+                        "path" => $path,
+                        "file_key" => $this->generateUniqeStringKey(File::class, "file_key", Config::get("custom.file_key_length")),
+                        "group_id" => $group->id,
+                        "created_by" => auth()->id(),
+                        "created_at" => Carbon::now()->format("Y-m-d H:i:s"),
+                        "updated_at" => Carbon::now()->format("Y-m-d H:i:s"),
+                    ];
+                    $desc_id++;
+                } else throw new Exception("Failed to store files");
             }
             $files = File::insert($fileCreated);
             return $this->success([], "Files uploaded successfully!");
@@ -52,15 +55,18 @@ class FileController extends Controller
         return $this->fail("One or more files have the same 'name.extension', upload rejected!");
     }
 
-    public function checkFilesNames($files, Group $group, Request $request): bool
+    public function checkFilesNames($files, int $groupID, array $exceptedIDs = null): bool
     {
         //New files
         $uploadedFilesArrayNames = [];
-        foreach ($request->files_array as $file) {
+        foreach ($files as $file) {
             $uploadedFilesArrayNames[] = $file->getClientOriginalName();
         }
         //Group files
-        $groupFilesNames = File::query()->where('group_id', $group->id)->pluck("name")->toArray();
+        $groupFilesNames = File::query()->where('group_id', $groupID);
+        if (!is_null($exceptedIDs))
+            $groupFilesNames->whereNotIn('id', $exceptedIDs);
+        $groupFilesNames = $groupFilesNames->pluck("name")->toArray();
         //check duplicate values
         if (count(array_intersect($uploadedFilesArrayNames, $groupFilesNames)) == 0)
             return true;
@@ -72,9 +78,49 @@ class FileController extends Controller
         //
     }
 
-    public function update(Request $request, string $id)
+    public function replaceFile(FileRequest $request)
     {
-        //
+        /**
+         * If request has a file:
+         * [1] Check for file_name
+         * [2] Store file and check if path created
+         * [3] Update file data
+         * [4] Check if file desc changed
+         * ////
+         * if file desc changed
+         * [1] Change file description
+         * [2] Save cahnge
+         * ////
+         * Create a log for the changes
+         * ////
+         * Commit to DB a
+         * return response
+         */
+        if (!$file = File::where(["file_key" => $request->file_key, "reserved_by" => auth()->id()])->first()) return $this->fail("File not found!", 404);
+        $oldFile = clone $file;
+        $fileReplaced = false;
+        DB::beginTransaction();
+        if ($newFile = $request->new_file) {
+            if ($this->checkFilesNames([$newFile], $file->group_id, [$file->id])) {
+                if ($path = $this->storeFile($newFile, "groups/" . $file->group_id . "/Files", Config::get("custom.private_path") . "/", $file->path, true)) {
+                    $file->update([
+                        "name" => $newFile->getClientOriginalName(),
+                        "mime" => $newFile->getClientOriginalExtension(),
+                        "size" => (float)round($newFile->getSize() / 1024, 3), //save in KB
+                        "path" => $path,
+                        "file_key" => $this->generateUniqeStringKey(File::class, "file_key", Config::get("custom.file_key_length")),
+                    ]);
+                    $fileReplaced = true;
+                } else throw new Exception("Failed to store files");
+            } else return $this->fail("One or more files have the same 'name.extension', upload rejected!");
+        }
+        if ($request->exists('desc')) {
+            $request->desc != $file->description ? $file->description = $request->desc : false;
+            $file->save();
+        }
+        $this->logFileReplacment($oldFile, $file, $request->user(), $fileReplaced);
+        DB::commit();
+        return $this->success([], "Update success");
     }
 
     public function destroy(string $id)
@@ -98,7 +144,10 @@ class FileController extends Controller
          * If an exception happen the DB will not commit (will rollback) and all the files will be free to reserve again.
          */
         foreach ($files as $file) {
-            if ((!in_array($file->group_id, $userGroups)) && $file->reserved_by == null) throw new Exception("You have no access to this file");
+            if (
+                !(in_array($file->group_id, $userGroups)
+                    && ($file->reserved_by == null || $file->reserved_by == auth()->id()))
+            ) throw new Exception("You have no access to this file");
             $file->reserved_by = auth()->id();
             $file->save();
             $this->createFileLog(
@@ -114,7 +163,7 @@ class FileController extends Controller
     }
 
     public function checkOut(Request $request) //Take only one file by request
-    { //TODO: Add upload file here instead of new request
+    {
         /** INFO:
          * Check if:
          * File exist
@@ -129,10 +178,42 @@ class FileController extends Controller
             $file->id,
             auth()->id(),
             "CheckOut",
-            2,
+            3,
             "file " . $file->name . " was checked out by user " . $request->user()->getFullName()
         );
         DB::commit();
         return $this->success();
+    }
+
+    public function logFileReplacment(File $oldFile, File $newFile, User $user, $fileReplaced = false): void
+    {
+        if ($fileReplaced) {
+            $info = "The File was replaced by '" .  $user->getFullName() . "'.";
+            $this->createFileLog($newFile->id, $user->id, "File Replacment", 5, $info);
+        }
+
+        if (strtok($oldFile->name, ".")  != strtok($newFile->name, ".")) {
+            $info = "File name was changed from '" . $oldFile->name . "' to '" . $newFile->name . "' caused by file replacment by user " . $user->getFullName() . ".";
+            $this->createFileLog($newFile->id, $user->id, "File Replacment (Name change)", 5, $info);
+        }
+
+        if ($oldFile->size != $newFile->size) {
+            $info = "File size was changed from '" . $oldFile->size . " KB' to '" . $newFile->size . " KB' caused by file replacment by user " . $user->getFullName() . ".";
+            $this->createFileLog($newFile->id, $user->id, "File Replacment  (size change)", 5, $info);
+        }
+
+        if ($oldFile->mime != $newFile->mime) {
+            $info = "File mime was changed from '" . $oldFile->mime . "' to '" . $newFile->mime . "' caused by file replacment by user " . $user->getFullName() . ".";
+            $this->createFileLog($newFile->id, $user->id, "File Replacment  (mime change)", 5, $info);
+        }
+
+        if ($oldFile->description != $newFile->description) {
+            $info = "File description was changed from '" . $oldFile->description . "' to '" . $newFile->description . "' caused by file replacment by user " . $user->getFullName() . ".";
+            $this->createFileLog($newFile->id, $user->id, "File Replacment  (description change)", 4, $info);
+        }
+    }
+
+    public function downloadFiles(FileRequest $request)
+    {
     }
 }

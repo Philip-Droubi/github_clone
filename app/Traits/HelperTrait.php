@@ -17,10 +17,12 @@ trait HelperTrait
      * @description Used to store files
      * @return string $file_path
      */
-    protected function storeFile($file, String $path, String $mainPath = "public/assets/", String $deletePath = null, Bool $isDir = false): string
+    protected function storeFile($file, String $path, String $mainPath = "public/assets/", String $deletePath = null, Bool $isInPrivate = false, Bool $isDir = false): string
     {
         if ($deletePath)
-            !$isDir ? Storage::delete($deletePath) : Storage::deleteDirectory($deletePath);
+            if ($isInPrivate)
+                !$isDir ? Storage::disk("private")->delete($deletePath) : Storage::disk("private")->deleteDirectory($deletePath);
+            else !$isDir ? Storage::delete($deletePath) : Storage::deleteDirectory($deletePath);
         $destination_path = $mainPath . $path;
         $fileToStore = $file;
         $randomString = Str::random(30);
