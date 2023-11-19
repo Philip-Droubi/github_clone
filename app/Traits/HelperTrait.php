@@ -68,7 +68,7 @@ trait HelperTrait
         $zipFileName = str_replace(' ', '_', $name) . "_" . Carbon::now()->format("Y_m_d_H_i") . '.zip';
         if ($zip->open(storage_path($zipFileName), ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
             foreach ($files as $file) {
-                $zip->addFile(storage_path("app/private" . $file->path), $file->name);
+                $zip->addFile(storage_path("app/private/" . $file->path), $file->name);
             }
             $zip->close();
             return storage_path($zipFileName);

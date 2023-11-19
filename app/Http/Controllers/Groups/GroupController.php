@@ -124,9 +124,10 @@ class GroupController extends Controller
 
     public function cloneGroup(Request $request)
     {
-        if (!$group = Group::where('group_key', $request->group_key)->first()) return $this->fail('Group not found!', 404);
+        if (!$group = Group::where('group_key', $request->group_key)->whereIn("id", GroupUser::where("user_id", auth()->id())->pluck("group_id")->toArray())->first()) return $this->fail('Group not found!', 404);
         $files = File::where("group_id", $group->id)->get(['name', 'path']);
         //TODO: Check if files reserved by users => then it could not be downloaded
+        if (count($files) == 0) return $this->fail("This group has no files yet", 400);
         if ($zipFile = $this->createZipFile($group->name, $files))
             return response()->download($zipFile)->deleteFileAfterSend(true);
         return $this->fail("Failed to create the zip file.", 500);

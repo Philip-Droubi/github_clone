@@ -215,5 +215,18 @@ class FileController extends Controller
 
     public function downloadFiles(FileRequest $request)
     {
+        $files = File::query()->whereIn("file_key", $request->files_keys)->get(); // Get all required files in one query
+        $userGroups = GroupUser::where("user_id", auth()->id())->pluck('group_id')->toArray();
+        foreach ($files as $file) {
+            if (
+                !(in_array($file->group_id, $userGroups) //Check if user can access each file
+                    // && ($file->reserved_by == null || $file->reserved_by == auth()->id())) // if only none reserved files are downloadable
+                )
+            )
+                throw new Exception("You have no access to this file");
+        }
+        if ($zipFile = $this->createZipFile(substr($files[0]->name, 0, 10) . "_" . Carbon::now()->format("Y_m_d_H_i"), $files))
+            return response()->download($zipFile)->deleteFileAfterSend(true);
+        return $this->fail("Failed to create the zip file.", 500);
     }
 }
