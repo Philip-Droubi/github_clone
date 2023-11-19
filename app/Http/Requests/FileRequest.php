@@ -18,7 +18,7 @@ class FileRequest extends FormRequest
 
     public function rules(): array
     {
-        if ($this->user() && $this->method() == "POST" && $this->path() == "api/files/check") return $this->checkInRule();
+        if ($this->user() && $this->method() == "POST" && ($this->path() == "api/files/check" || $this->path() == "api/files/download")) return $this->checkInRule();
         elseif ($this->user() && $this->method() == "POST" && $this->path() == "api/files/replace") return $this->replaceRule();
         return $this->storeRules();
     }

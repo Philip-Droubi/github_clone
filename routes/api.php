@@ -42,5 +42,6 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
         Route::post("/check", "checkIn");
         Route::post("/replace", "replaceFile");
         Route::get("/checkout/{file_key}", "checkout");
+        Route::post("/download", "downloadFiles");
     });
 });
