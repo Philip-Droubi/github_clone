@@ -29,8 +29,9 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
     });
     Route::prefix("groups")->controller(GroupController::class)->group(function () {
         Route::get("/", "index");
-        Route::get("/my", "getMyGroups");
-        Route::get("/my_groups/{id?}", "getGroupsByID"); //user id
+        // Route::get("/my", "getMyGroups"); Dublicated
+        Route::get("/user_groups/{id?}", "getGroupsByID"); //user id
+        Route::get("/group_contributers/{id}", "getGroupContributers"); //user id
         Route::get("/{id}", "show"); // group id or group key
         Route::post("/", "store");
         Route::put("/{group_key}", "update");
@@ -38,7 +39,11 @@ Route::group(['middleware' => ['try_catch', 'auth:sanctum', 'json', 'apikey', 'x
         Route::get("/clone/{group_key}", "cloneGroup");
     });
     Route::prefix("files")->controller(FileController::class)->group(function () {
+        Route::get("/", "index");
         Route::post("/", "store");
+        Route::delete("/{id}", "destroy");
+        Route::get("/group_files/{id}", "getFilesByGroupID");
+        Route::get("/my_files", "getMyFiles");
         Route::post("/check", "checkIn");
         Route::post("/replace", "replaceFile");
         Route::get("/checkout/{file_key}", "checkout");

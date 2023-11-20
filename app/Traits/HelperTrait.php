@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\File\FileLog;
 use App\Models\Group\Group;
+use App\Models\Group\GroupLog;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -61,6 +62,24 @@ trait HelperTrait
         if ($log) return true;
         return false;
     }
+    protected function createGroupLog($group_id, $user_id, string $action, string $info = "", int $importance = 1): bool
+    {
+        if ($importance < 1)
+            $importance = 1;
+        elseif ($importance > 5)
+            $importance = 5;
+        $log = GroupLog::create([
+            "action"          => $action,
+            "additional_info" => $info,
+            "importance"      => $importance,
+            "group_id"        => $group_id,
+            "user_id"         => $user_id,
+        ]);
+        if ($log)
+            return true;
+        return false;
+    }
+
 
     public function createZipFile(string $name, $files)
     {
