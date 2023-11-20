@@ -7,6 +7,7 @@ use App\Http\Requests\FileRequest;
 use App\Http\Resources\FileResource;
 use App\Models\File\File;
 use App\Models\Group\Group;
+use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -14,16 +15,29 @@ use Carbon\Carbon;
 use Exception;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
-
+use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
 {
     use GeneralTrait, HelperTrait;
-    public function index()
+    public function index(Request $requet)
     {
-        //
-    }
+        //Omar
+        //TODO: add admin gate
 
+        $order = $requet->orderBy ?? "name";
+        $desc  = $requet->desc ?? "desc";
+        $limit = $requet->limit ?? 20;
+        $files = File::where("created_by", auth()->id())
+            ->where("name", "LIKE", "%" . $requet->name . "%")
+            ->orderBy($order, $desc)->paginate($limit);
+        $data  = [];
+        foreach ($files as $file) {
+            $data[] = new FileResource($file);
+        }
+        return $this->success($data);
+
+    }
     public function store(FileRequest $request)
     {
         $group   = Group::where("group_key", $request->group_key)->first();
@@ -45,9 +59,27 @@ class FileController extends Controller
                     "created_at"  => Carbon::now()->format("Y-m-d H:i:s"),
                     "updated_at"  => Carbon::now()->format("Y-m-d H:i:s"),
                 ];
+
                 $desc_id++;
             }
+
             $files = File::insert($fileCreated);
+            //Omar
+            //Add Log
+            if ($files) {
+                foreach ($fileCreated as $file) {
+                    $user       = User::find(auth()->id())->first();
+                    $fileObject = File::where('file_key', $file['file_key'])->first();
+                    $this->createFileLog(
+                        $fileObject->id,
+                        auth()->id(),
+                        "Create",
+                        5,
+                        "File '" . $file['name'] . "' created by:'" . $user->account_name . "'",
+                    );
+                }
+            }
+
             return $this->success([], "Files uploaded successfully!");
         }
         return $this->fail("One or more files have the same 'name.extension', upload rejected!");
@@ -66,19 +98,27 @@ class FileController extends Controller
     public function getFilesByGroupID(string $id, Request $request)
     {
         //Omar
-        $group = Group::where(['group_key' => $id]);
+
+        $group = Group::where(['group_key' => $id])->with('contributers')->first();
         if (!$group)
             return $this->fail("Group with key '" . $id . "' not found.", 404);
-        if ($group->created_by != auth()->id() || !in_array(auth()->id(), $group->contributers)) {
+
+        $contributers = [];
+        foreach ($group->contributers as $cont) {
+            $contributers[] = $cont->user_id;
+        }
+        if ($group->created_by != auth()->id() || !in_array(auth()->id(), $contributers)) {
             return $this->fail("You don't have an access to this group files.", 403);
         }
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 20;
-        $files = $group->files
+        $files = File::where('group_id', $group->id) 
             ->where("name", "LIKE", "%" . $request->name . "%")
-            ->orderBy($order, $desc)->paginate($limit);
-        ;
+            ->orderBy($order, $desc)
+            ->paginate($limit);
+
+
         $data = [];
         foreach ($files as $file) {
             $data[] = new FileResource($file);
@@ -114,23 +154,20 @@ class FileController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id, Request $request)
+    public function destroy(Request $request)
     {
-        //Omar
+        // Omar
         DB::beginTransaction();
-        $file = File::where(["file_key" => $request->file_key, "created_by" => auth()->id()])->first();
+        $file = File::where("file_key",$request->id)->first();
         if (!$file)
-            return $this->fail("File with file key '" . $request->file_key . "' not found.", 404);
+            return $this->fail("File not found.", 404); 
 
-        if (!is_null($file->reserved_by)) //TODO: discuss if the owner can delete his file even if reserved
-            return $this->fail("File with file key '" . $request->file_key . "' is reserved.", 401);
-
-        $group = Group::find($file->group_id);
-        if ($group && in_array(auth()->id(), $group->contributers)) {
+       if(File::query()->where(["file_key"=>$request->id,'created_by'=>auth()->id()])->whereNull('reserved_by')->delete()){
+            Storage::disk("private")->delete($file->path);
             DB::commit();
-            $file->delete();
-        }
+            return $this->success([], "File deleted successfully", 200);
+       }
         DB::rollBack();
-        return $this->fail("You don't have an access to this file.", 403);
+        return $this->fail("File is reserved", 403);
     }
 }

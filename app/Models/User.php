@@ -4,7 +4,9 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\File\File;
+use App\Models\File\FileLog;
 use App\Models\Group\Group;
+use App\Models\Group\GroupLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -47,7 +49,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'password'          => 'hashed',
     ];
 
     public function setFirstNameAttribute($value)
@@ -84,5 +86,14 @@ class User extends Authenticatable
     public function filesReserved()
     {
         return $this->hasMany(File::class, 'reserved_by');
+    }
+
+    public function filesLog()
+    {
+        return $this->hasMany(FileLog::class, 'user_id');
+    }
+    public function groupsLog()
+    {
+        return $this->hasMany(GroupLog::class, 'user_id');
     }
 }

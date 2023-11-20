@@ -1,21 +1,21 @@
 <?php
 
-namespace App\Models\File;
+namespace App\Models\Group;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class FileLog extends Model
+class GroupLog extends Model
 {
     use HasFactory;
-    protected $table = "files_log";
+    protected $table = "groups_log";
     protected $primaryKey = "id";
     protected $fillable = [
         'action',
         'additional_info',
         'importance',
-        'file_id',
+        'group_id',
         'user_id',
     ];
 
@@ -30,8 +30,8 @@ class FileLog extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function file()
+    public function group()
     {
-        return $this->belongsTo(File::class, 'file_id');
+        return $this->belongsTo(Group::class, 'group_id');
     }
 }

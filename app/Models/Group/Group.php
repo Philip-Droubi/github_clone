@@ -45,4 +45,9 @@ class Group extends Model
     {
         return $this->hasMany(GroupUser::class, 'group_id');
     }
+
+    public function log()
+    {
+        return $this->hasMany(GroupLog::class, 'group_id');
+    }
 }
