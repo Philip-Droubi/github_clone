@@ -10,14 +10,13 @@ use App\Models\Group\Group;
 use App\Models\Group\GroupUser;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Exception;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -213,7 +212,7 @@ class FileController extends Controller
     }
 
 
-    public function destroy(string $id)
+    public function destroy(string $id , Request $request)
 
     {
         // Omar

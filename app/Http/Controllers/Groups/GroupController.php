@@ -163,6 +163,7 @@ class GroupController extends Controller
                         GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
                     //Omar
                 //Add Log
+                $user = User::find($id)->first(); //TODO: check
                 $this->createGroupLog(
                     $group->id,
                     auth()->id(),
@@ -186,6 +187,7 @@ class GroupController extends Controller
                 ]);
               //Omar
             //Add Log
+            $user = User::find($id)->first(); //TODO: check
             $this->createGroupLog(
                 $group->id,
                 auth()->id(),
