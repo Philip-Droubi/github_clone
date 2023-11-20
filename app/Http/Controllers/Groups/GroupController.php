@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Exception;
+use ZipArchive;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 use Illuminate\Support\Facades\Storage;
@@ -56,11 +57,13 @@ class GroupController extends Controller
             "group_id" => $group->id,
             "user_id"  => auth()->id(),
         ]);
-        foreach ($request->users_list as $id) // Add all group members
-            GroupUser::firstOrCreate([
-                "group_id" => $group->id,
-                "user_id"  => $id,
-            ]);
+
+        if ($request->users_list)
+            foreach ($request->users_list as $id) // Add all group members
+                GroupUser::firstOrCreate([
+                    "group_id" => $group->id,
+                    "user_id" => $id,
+                ]);
         DB::commit();
         //Omar
         //Add Log
@@ -152,12 +155,13 @@ class GroupController extends Controller
             );
         }
         // Delete users
-        foreach ($request->deleted_users_list as $id) {
-            $user = User::find($id);
-            if (!File::query()->where(["group_id" => $group->id, "reserved_by" => $id])->first()) {
-                if ($id != $group->created_by) // To not delete group owner
-                    GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
-                //Omar
+
+        if ($request->deleted_users_list)
+            foreach ($request->deleted_users_list as $id) {
+                if (!File::query()->where(["group_id" => $group->id, "reserved_by" => $id])->first()) {
+                    if ($id != $group->created_by) // To not delete group owner
+                        GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
+                    //Omar
                 //Add Log
                 $this->createGroupLog(
                     $group->id,
@@ -166,21 +170,21 @@ class GroupController extends Controller
                     "User '" . $user->account_name . "' removed from group  " . $group->name . "' by: ' " . $actionUser->account_name . " '",
                     2
                 );
-
-            } else {
-
-                $userName = $user->first_name . " " . $user->last_name;
-                throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
+                } else {
+                    $user = User::find($id);
+                    $userName = $user->first_name . " " . $user->last_name;
+                    throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
+                }
             }
-        }
         // Add new users
-        foreach ($request->users_list as $id) {
-            $user = User::find($id);
-            GroupUser::firstOrCreate([
-                "group_id" => $group->id,
-                "user_id"  => $id,
-            ]);
-            //Omar
+
+        if ($request->users_list)
+            foreach ($request->users_list as $id) {
+                GroupUser::firstOrCreate([
+                    "group_id" => $group->id,
+                    "user_id" => $id,
+                ]);
+              //Omar
             //Add Log
             $this->createGroupLog(
                 $group->id,
@@ -189,7 +193,8 @@ class GroupController extends Controller
                 "User '" . $user->account_name . "' added to group  " . $group->name . "' by: ' " . $actionUser->account_name . " '",
                 2
             );
-        }
+            }
+
         DB::commit();
 
 
@@ -248,6 +253,17 @@ class GroupController extends Controller
         }
         DB::rollBack();
         return $this->fail('Cannot delete this group as one or more of its files are reserved', 400);
+    }
+
+    public function cloneGroup(Request $request)
+    {
+        if (!$group = Group::where('group_key', $request->group_key)->whereIn("id", GroupUser::where("user_id", auth()->id())->pluck("group_id")->toArray())->first()) return $this->fail('Group not found!', 404);
+        $files = File::where("group_id", $group->id)->get(['name', 'path']);
+        //TODO: Check if files reserved by users => then it could not be downloaded
+        if (count($files) == 0) return $this->fail("This group has no files yet", 400);
+        if ($zipFile = $this->createZipFile($group->name, $files))
+            return response()->download($zipFile)->deleteFileAfterSend(true);
+        return $this->fail("Failed to create the zip file.", 500);
     }
 }
 

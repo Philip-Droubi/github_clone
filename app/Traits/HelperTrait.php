@@ -80,6 +80,7 @@ trait HelperTrait
         return false;
     }
 
+
     public function createZipFile(string $name, $files)
     {
         $zip = new ZipArchive;

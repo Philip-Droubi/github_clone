@@ -72,6 +72,11 @@ class User extends Authenticatable
         $this->attributes['account_name'] = strtolower(str_replace(['@', ' '], ['', '_'], trim($value)));
     }
 
+    public function getFullName()
+    {
+        return $this->first_name . " " . $this->last_name;
+    }
+
     //relations
     public function groups()
     {
@@ -96,4 +101,5 @@ class User extends Authenticatable
     {
         return $this->hasMany(GroupLog::class, 'user_id');
     }
+
 }
