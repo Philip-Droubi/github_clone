@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('commits', function (Blueprint $table) {
             $table->id();
-            $table->string('description');
+            $table->string('action');
+            $table->text('description')->nullable();
             $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
             $table->foreignId('commiter_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\File\File;
 use App\Models\File\FileLog;
+use App\Models\Group\Commit;
 use App\Models\Group\Group;
 use App\Models\Group\GroupLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -102,4 +103,8 @@ class User extends Authenticatable
         return $this->hasMany(GroupLog::class, 'user_id');
     }
 
+    public function commits()
+    {
+        return $this->hasMany(Commit::class, 'commiter_id');
+    }
 }

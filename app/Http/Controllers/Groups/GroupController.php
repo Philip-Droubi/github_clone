@@ -28,7 +28,6 @@ class GroupController extends Controller
     public function index(Request $requet)
     {
         //TODO: add admin gate
-
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
@@ -40,7 +39,6 @@ class GroupController extends Controller
             $data[] = new GroupResource($group);
         }
         return $this->success($data);
-
     }
 
     public function store(GroupRequest $request)
@@ -81,7 +79,6 @@ class GroupController extends Controller
     public function show(Request $request, string $id)
     {
         //Omar
-
         $group = Group::where(['group_key' => $id])->with('owner', 'contributers')->first();
         if (!$group)
             return $this->fail("Group with key '" . $request->id . "' not found.", 404);
@@ -91,7 +88,6 @@ class GroupController extends Controller
         }
         if ($group->owner->id != auth()->id() || !in_array(auth()->id(), $contributers))
             return $this->fail("You don't have access to this group.", 403);
-
         return $this->success($group);
     }
 
@@ -109,6 +105,7 @@ class GroupController extends Controller
     //     }
     //     return $this->success($data);
     // }
+
     public function getGroupsByID(Request $requet)
     {
         // Omar
@@ -162,15 +159,15 @@ class GroupController extends Controller
                     if ($id != $group->created_by) // To not delete group owner
                         GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
                     //Omar
-                //Add Log
-                $user = User::find($id)->first(); //TODO: check
-                $this->createGroupLog(
-                    $group->id,
-                    auth()->id(),
-                    "Update",
-                    "User '" . $user->account_name . "' removed from group  " . $group->name . "' by: ' " . $actionUser->account_name . " '",
-                    2
-                );
+                    //Add Log
+                    $user = User::find($id)->first(); //TODO: check
+                    $this->createGroupLog(
+                        $group->id,
+                        auth()->id(),
+                        "Update",
+                        "User '" . $user->account_name . "' removed from group  '" . $group->name . "' by: '" . $actionUser->account_name . "'.",
+                        2
+                    );
                 } else {
                     $user = User::find($id);
                     $userName = $user->first_name . " " . $user->last_name;
@@ -185,16 +182,16 @@ class GroupController extends Controller
                     "group_id" => $group->id,
                     "user_id" => $id,
                 ]);
-              //Omar
-            //Add Log
-            $user = User::find($id)->first(); //TODO: check
-            $this->createGroupLog(
-                $group->id,
-                auth()->id(),
-                "Update",
-                "User '" . $user->account_name . "' added to group  " . $group->name . "' by: ' " . $actionUser->account_name . " '",
-                2
-            );
+                //Omar
+                //Add Log
+                $user = User::find($id)->first(); //TODO: check
+                $this->createGroupLog(
+                    $group->id,
+                    auth()->id(),
+                    "Update",
+                    "User '" . $user->account_name . "' added to group  " . $group->name . "' by: ' " . $actionUser->account_name . " '",
+                    2
+                );
             }
 
         DB::commit();
@@ -219,7 +216,7 @@ class GroupController extends Controller
             return $this->fail("You don't have an access to this group.", 403);
         }
         $limit        = $request->limit ?? 20;
-        $contributers = GroupUser::where('group_id', $group->id) ->paginate($limit);
+        $contributers = GroupUser::where('group_id', $group->id)->paginate($limit);
 
         $data = [];
         foreach ($contributers as $cont) {
@@ -229,12 +226,13 @@ class GroupController extends Controller
     }
 
 
-    public function destroy(Request $request) {
+    public function destroy(Request $request)
+    {
         DB::beginTransaction();
         if (!$group = Group::where(['group_key' => $request->group_key, "created_by" => auth()->id()])->first()) return $this->fail('Group not found!', 404);
         $name = $group->name;
         $id = $group->id;
-         //Omar
+        //Omar
         //Add Log
         $user = User::find(auth()->id())->first();
         $this->createGroupLog(
@@ -268,4 +266,3 @@ class GroupController extends Controller
         return $this->fail("Failed to create the zip file.", 500);
     }
 }
-

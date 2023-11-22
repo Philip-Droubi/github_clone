@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Group\Commit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -22,6 +23,9 @@ class UserResource extends JsonResource
             "last_name" => $this->last_name,
             "img" => is_null($this->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $this->img,
             "created_at" => Carbon::parse($this->created_at)->format('Y-m-d H:i'),
+            "groups_count" => count($this->groups),
+            "commits_count" => count($this->commits),
+            "commits_this_year" => Commit::where("commiter_id", $this->id)->where("created_at", ">=", Carbon::parse((string)Carbon::now()->format('Y'))->format('Y-m-d'))->count(),
         ];
     }
 }
