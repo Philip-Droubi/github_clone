@@ -39,16 +39,16 @@ class FileController extends Controller
             $data[] = new FileResource($file);
         }
         return $this->success($data);
-
     }
     public function store(FileRequest $request)
     {
         $group   = Group::where("group_key", $request->group_key)->first();
+        $user    = $request->user();
         $desc_id = 0;
         $fileCreated = [];
         if ($this->checkFilesNames($request->files_array, $group->id)) {
+            DB::beginTransaction();
             foreach ($request->files_array as $file) {
-
                 if ($path = $this->storeFile($file, "groups/" . $group->id . "/Files", Config::get("custom.private_path") . "/")) {
                     $fileCreated[] = [ //Help in not create N+ query problem
                         "name" => $file->getClientOriginalName(),
@@ -65,26 +65,32 @@ class FileController extends Controller
                     ];
                     $desc_id++;
                 } else throw new Exception("Failed to store files");
-
             }
-
             $files = File::insert($fileCreated);
+            //Create commit
+            $filesCollection = collect($fileCreated);
+            $filesObject = File::whereIn("file_key", $filesCollection->pluck("file_key")->toArray())->get();
+            $this->createCommit(
+                $group->id,
+                auth()->id(),
+                "Add Files",
+                "User '@" . $user->account_name . " (" . $user->getFullName() . ")' added " . count($fileCreated) . " files to '" . $group->name . "' group.",
+                $filesObject->pluck("id")->toArray()
+            );
             //Omar
             //Add Log
             if ($files) {
-                foreach ($fileCreated as $file) {
-                    $user       = User::find(auth()->id())->first();
-                    $fileObject = File::where('file_key', $file['file_key'])->first();
+                foreach ($filesObject as $file) {
                     $this->createFileLog(
-                        $fileObject->id,
+                        $file->id,
                         auth()->id(),
                         "Create",
                         5,
-                        "File '" . $file['name'] . "' created by:'" . $user->account_name . "'",
+                        "File '" . $file->name . "' created by:'" . $user->account_name . "'",
                     );
                 }
             }
-
+            DB::commit();
             return $this->success([], "Files uploaded successfully!");
         }
         return $this->fail("One or more files have the same 'name.extension', upload rejected!");
@@ -132,29 +138,26 @@ class FileController extends Controller
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 20;
-        $files = File::where('group_id', $group->id) 
+        $files = File::where('group_id', $group->id)
             ->where("name", "LIKE", "%" . $request->name . "%")
             ->orderBy($order, $desc)
             ->paginate($limit);
-
-
         $data = [];
         foreach ($files as $file) {
             $data[] = new FileResource($file);
         }
         return $this->success($data);
     }
+
     public function getMyFiles(Request $request)
     {
         //Omar
-
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 20;
         $files = File::where(['created_by' => auth()->id()])
             ->where("name", "LIKE", "%" . $request->name . "%")
-            ->orderBy($order, $desc)->paginate($limit);
-        ;
+            ->orderBy($order, $desc)->paginate($limit);;
         $data = [];
         foreach ($files as $file) {
             $data[] = new FileResource($file);
@@ -187,6 +190,7 @@ class FileController extends Controller
         if (!$file = File::where(["file_key" => $request->file_key, "reserved_by" => auth()->id()])->first()) return $this->fail("File not found!", 404);
         $oldFile = clone $file;
         $fileReplaced = false;
+        $user = $request->user();
         DB::beginTransaction();
         if ($newFile = $request->new_file) {
             if ($this->checkFilesNames([$newFile], $file->group_id, [$file->id])) {
@@ -207,25 +211,38 @@ class FileController extends Controller
             $file->save();
         }
         $this->logFileReplacment($oldFile, $file, $request->user(), $fileReplaced);
+        $this->createCommit(
+            $file->group_id,
+            $user->id,
+            "Replace File",
+            "User ' @" . $user->account_name . " (" . $user->getFillName() . ") updated " . $oldFile->name . ".",
+            [$file->id]
+        );
         DB::commit();
         return $this->success([], "Update success");
     }
 
 
-    public function destroy(string $id , Request $request)
-
+    public function destroy(Request $request)
     {
         // Omar
         DB::beginTransaction();
-        $file = File::where("file_key",$request->id)->first();
+        $file = File::where("file_key", $request->id)->first();
         if (!$file)
-            return $this->fail("File not found.", 404); 
-
-       if(File::query()->where(["file_key"=>$request->id,'created_by'=>auth()->id()])->whereNull('reserved_by')->delete()){
-            Storage::disk("private")->delete($file->path);
+            return $this->fail("File not found.", 404);
+        $deletedFile = clone $file;
+        if (File::query()->where(["file_key" => $request->id, 'created_by' => auth()->id()])->whereNull('reserved_by')->delete()) {
+            Storage::disk("private")->delete($deletedFile->path);
+            $user = $request->user();
+            $this->createCommit(
+                $deletedFile->group_id,
+                $user->id,
+                "Delete File",
+                "File '" . $deletedFile->name . "' was deleted by user @" . $user->account_name . " (" . $user->getFullName() . ")."
+            );
             DB::commit();
             return $this->success([], "File deleted successfully", 200);
-       }
+        }
         DB::rollBack();
         return $this->fail("File is reserved", 403);
     }

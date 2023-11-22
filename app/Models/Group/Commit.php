@@ -12,8 +12,9 @@ class Commit extends Model
     protected $table = "commits";
     protected $primaryKey = "id";
     protected $fillable = [
+        'action',
         'description',
-        'group_key',
+        'group_id',
         'commiter_id'
     ];
 

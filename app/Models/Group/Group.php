@@ -50,4 +50,9 @@ class Group extends Model
     {
         return $this->hasMany(GroupLog::class, 'group_id');
     }
+
+    public function commits()
+    {
+        return $this->hasMany(Commit::class, 'group_id');
+    }
 }

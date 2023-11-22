@@ -98,7 +98,7 @@ class AuthController extends Controller
         if (!$request->id)
             return $this->success(new UserResource(Auth::user()));
         if (!$user = User::find($request->id)) return $this->fail("Not found!", 404);
-        return $this->success($user);
+        return $this->success(new UserResource($user));
     }
 
     public function update(UserRegisterRequest $request)

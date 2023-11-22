@@ -3,9 +3,12 @@
 namespace App\Traits;
 
 use App\Models\File\FileLog;
+use App\Models\Group\Commit;
+use App\Models\Group\CommitFile;
 use App\Models\Group\Group;
 use App\Models\Group\GroupLog;
 use Carbon\Carbon;
+use GuzzleHttp\Psr7\Request;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -80,7 +83,6 @@ trait HelperTrait
         return false;
     }
 
-
     public function createZipFile(string $name, $files)
     {
         $zip = new ZipArchive;
@@ -93,5 +95,27 @@ trait HelperTrait
             return storage_path($zipFileName);
         }
         return false;
+    }
+
+    public function createCommit(int $groupID, int $userID, string $action, string $description = "", array $files = []): bool
+    {
+        $commit = Commit::create([
+            "action" => $action,
+            "description" => $description ?? "",
+            "commiter_id" => $userID,
+            "group_id" => $groupID,
+        ]);
+        $commitFiles = [];
+        foreach ($files as $file) {
+            $commitFiles[] = [
+                "file_id" => $file,
+                "commit_id" => $commit->id,
+                "created_at" => Carbon::now()->format("Y-m-d H:i:s"),
+                "updated_at" => Carbon::now()->format("Y-m-d H:i:s"),
+            ];
+        }
+        if ($commitFiles)
+            CommitFile::insert($commitFiles);
+        return true;
     }
 }
