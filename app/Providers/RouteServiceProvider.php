@@ -29,7 +29,7 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         $this->routes(function () {
-            Route::middleware('api')
+            Route::middleware(['api', 'try_catch', 'json', 'apikey', 'xss'])
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
