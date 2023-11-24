@@ -30,7 +30,7 @@ class Handler extends ExceptionHandler
         });
         $this->renderable(function (\Illuminate\Auth\AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
-                return $this->fail(__("messages.Access denied"), 401);
+                return $this->fail("Access denied", 401);
             }
         });
     }

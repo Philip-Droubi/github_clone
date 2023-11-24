@@ -70,5 +70,6 @@ class Kernel extends HttpKernel
         'bots' => \App\Http\Middleware\BotsCheck::class,
         'lastseen' => \App\Http\Middleware\UpdateLastSeen::class,
         'xss' => \App\Http\Middleware\XSSProtection::class,
+        'admin' => \App\Http\Middleware\CheckAdmin::class
     ];
 }
