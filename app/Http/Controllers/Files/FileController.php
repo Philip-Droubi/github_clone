@@ -26,8 +26,6 @@ class FileController extends Controller
     public function index(Request $requet)
     {
         //Omar
-        //TODO: add admin gate
-
         $order = $requet->orderBy ?? "name";
         $desc  = $requet->desc ?? "desc";
         $limit = $requet->limit ?? 20;
@@ -148,13 +146,15 @@ class FileController extends Controller
         return $this->success($data);
     }
 
-    public function getMyFiles(Request $request)
+    public function getUserFiles(Request $request)
     {
         //Omar
+        if (!$user = User::find($request->id ?? auth()->id()))
+            return $this->fail("User not found", 404);
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 20;
-        $files = File::where(['created_by' => auth()->id()])
+        $files = File::where(['created_by' => $user->id])
             ->where("name", "LIKE", "%" . $request->name . "%")
             ->orderBy($order, $desc)->paginate($limit);;
         $data = [];

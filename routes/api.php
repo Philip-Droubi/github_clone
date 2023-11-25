@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Files\FileController;
+use App\Http\Controllers\Files\FileLogController;
+use App\Http\Controllers\Groups\GroupLogController;
 use App\Http\Controllers\Groups\GroupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +26,7 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
         Route::put("/update_profile", "update");
     });
     Route::prefix("groups")->controller(GroupController::class)->group(function () {
-        Route::get("/", "index");
+        Route::get("/", "index")->middleware('admin');
         // Route::get("/my", "getMyGroups"); Dublicated
         Route::get("/user_groups/{id?}", "getGroupsByID"); //user id
         Route::get("/group_contributers/{id}", "getGroupContributers"); //user id
@@ -35,14 +37,22 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
         Route::get("/clone/{group_key}", "cloneGroup");
     });
     Route::prefix("files")->controller(FileController::class)->group(function () {
-        Route::get("/", "index");
+        Route::get("/", "index")->middleware('admin');;
         Route::post("/", "store")->middleware('max_files');
         Route::delete("/{id}", "destroy");
         Route::get("/group_files/{id}", "getFilesByGroupID");
-        Route::get("/my_files", "getMyFiles");
+        Route::get("/user_files/{id?}", "getUserFiles");
         Route::post("/check", "checkIn");
         Route::post("/replace", "replaceFile");
         Route::get("/checkout/{file_key}", "checkout");
         Route::post("/download", "downloadFiles");
+    });
+    Route::prefix("groups_log")->controller(GroupLogController::class)->group(function () {
+        Route::get("/", "index")->middleware('admin');
+        
+    });
+    Route::prefix("files_log")->controller(FileLogController::class)->group(function () {
+        Route::get("/", "index")->middleware('admin');
+
     });
 });
