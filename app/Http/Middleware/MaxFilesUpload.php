@@ -15,7 +15,7 @@ class MaxFilesUpload
     public function handle(Request $request, Closure $next): Response
     {
         if (
-            File::where("created_by", auth()->id())->count() + count($request->files_array) > Config::get("custom.max_files_per_user")
+            count(File::where("created_by", auth()->id())->get(["id"])) + count($request->files_array) > Config::get("custom.max_files_per_user")
         )
             return $this->fail("You have reached the maximum number of files allowed to be uploaded by you to the system.");
         return $next($request);

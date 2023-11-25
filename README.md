@@ -25,6 +25,21 @@
 
 ### Frontend
 
+Flutter web\
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)
+
 ## Features
 
 ## Contributers
+
+### On Backend
+
+[Philip Droubi](https://github.com/Philip-Droubi)\
+[Omar Zaghlouleh](https://github.com/OmarZaghlouleh)
+
+### On Frontend
+
+Frontend project could be found here [Link To FrontEnd](https://github.com/OmarZaghlouleh/github_clone_flutter)\
+[Omar Zaghlouleh](https://github.com/OmarZaghlouleh)\
+[Fadi Asfour](https://github.com/Fadi-Asfour)\
+[Wael Orabi](https://github.com/WaelOrabi)

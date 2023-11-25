@@ -21,6 +21,7 @@ use Exception;
 use ZipArchive;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class GroupController extends Controller

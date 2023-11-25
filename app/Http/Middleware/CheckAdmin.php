@@ -13,7 +13,7 @@ class CheckAdmin
     use GeneralTrait;
     public function handle(Request $request, Closure $next): Response
     {
-        if (Gate::allow("admin"))
+        if (Gate::allows("admin"))
             return $next($request);
         return $this->fail("Access denied.", 403);
     }
