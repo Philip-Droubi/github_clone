@@ -36,7 +36,7 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
     });
     Route::prefix("files")->controller(FileController::class)->group(function () {
         Route::get("/", "index");
-        Route::post("/", "store");
+        Route::post("/", "store")->middleware('max_files');
         Route::delete("/{id}", "destroy");
         Route::get("/group_files/{id}", "getFilesByGroupID");
         Route::get("/my_files", "getMyFiles");

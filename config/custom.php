@@ -50,4 +50,17 @@ return [
     */
 
     "private_path" => "private",
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Max File Per User
+    |--------------------------------------------------------------------------
+    | This value is used to define the number of files user can upload on server.
+    | Notice that changing the path will not delete files already stored
+    | in the system.
+    |
+    */
+
+    "max_files_per_user" => 500,
 ];

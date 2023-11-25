@@ -22,7 +22,7 @@ class GroupResource extends JsonResource
             "contributers" => count($this->contributers),
             "commits"      => count($this->commits),
             "last_commit"  => $lastCommit ? Carbon::parse(($lastCommit->created_at))->format("Y-m-d H:i:s") : "",
-            "last_commit_By"  => $lastCommit->commiter->getFullName() ?? "",
+            "last_commit_By"  => $lastCommit ? $lastCommit->commiter->getFullName() : "",
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Groups;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GroupRequest;
+use App\Http\Resources\ContributerResource;
 use App\Http\Resources\FileResource;
 use App\Http\Resources\GroupResource;
 use App\Http\Resources\UserResource;
@@ -43,6 +44,7 @@ class GroupController extends Controller
 
     public function store(GroupRequest $request)
     {
+        if (!$this->checkGroupName($request->name, auth()->id())) return $this->fail("Can not use This name, name already used");
         DB::beginTransaction();
         $group = Group::create([
             "name"        => $request->name,
@@ -70,10 +72,22 @@ class GroupController extends Controller
             $group->id,
             auth()->id(),
             "Create",
-            "Group '" . $group->name . "' created by:'" . $user->account_name . "'",
+            "Group '" . $group->name . "' created by: '@" . $user->account_name . " '(" . $user->getFullName() . ").",
             5
         );
         return $this->success(new GroupResource($group));
+    }
+
+    public function checkGroupName(string $name, int $id, array $exceptedIDs = []): bool
+    {
+        $usedNames = Group::where("created_by", $id);
+        if ($exceptedIDs)
+            $usedNames->whereNotIn("id", $exceptedIDs);
+        $usedNames = $usedNames->pluck("name")->toArray();
+        $mergedArray = array_merge(["public"], $usedNames);
+        if (in_array($name, $mergedArray))
+            return false;
+        return true;
     }
 
     public function show(Request $request, string $id)
@@ -106,7 +120,7 @@ class GroupController extends Controller
     //     return $this->success($data);
     // }
 
-    public function getGroupsByID(Request $requet)
+    public function getGroupsByID(Request $requet) // user groups
     {
         // Omar
         if (!$user = User::find($requet->id ?? auth()->id()))
@@ -129,25 +143,25 @@ class GroupController extends Controller
         return $this->success($data);
     }
 
-
     public function update(GroupRequest $request)
     {
-        $actionUser = User::find(auth()->id())->first();
-        DB::beginTransaction();
+        $actionUser   = User::find(auth()->id())->first();
         $group        = Group::where("group_key", $request->group_key)->first();
         $oldGroupName = $group->name;
+        if ($group->is_public) return $this->fail("Can not update this group!");
+        if (!$this->checkGroupName($request->name, auth()->id(), [$group->id])) return $this->fail("Can not use This name, name already used");
+        DB::beginTransaction();
         $request->name ? ($request->name != $group->name ? $group->name = $request->name : false) : false;
         $request->exists('desc') ? ($request->desc != $group->description ? $group->description = $request->desc : false) : false;
         $group->save();
         //Omar
         //Add Log
         if ($oldGroupName != $group->name) {
-
             $this->createGroupLog(
                 $group->id,
                 auth()->id(),
                 "Update",
-                "Group '" . $oldGroupName . "' name changed to " . $group->name . "' by: ' " . $actionUser->account_name . " '",
+                "Group '" . $oldGroupName . "' name changed to " . $group->name . "' by: '@" . $actionUser->account_name . " '(" . $actionUser->getFullName() . ").",
                 2
             );
         }
@@ -165,7 +179,7 @@ class GroupController extends Controller
                         $group->id,
                         auth()->id(),
                         "Update",
-                        "User '" . $user->account_name . "' removed from group  '" . $group->name . "' by: '" . $actionUser->account_name . "'.",
+                        "User '@" . $user->account_name . "' removed from group  '" . $group->name . "' by: '@" . $actionUser->account_name . " '(" . $actionUser->getFullName() . ").",
                         2
                     );
                 } else {
@@ -189,30 +203,25 @@ class GroupController extends Controller
                     $group->id,
                     auth()->id(),
                     "Update",
-                    "User '" . $user->account_name . "' added to group  " . $group->name . "' by: ' " . $actionUser->account_name . " '",
+                    "User '@" . $user->account_name . "' added to group " . $group->name . "' by: '@" . $actionUser->account_name . " '(" . $actionUser->getFullName() . ").",
                     2
                 );
             }
-
         DB::commit();
-
-
         return $this->success(new GroupResource($group), "updated");
     }
 
     public function getGroupContributers(string $id, Request $request)
     {
         //Omar
-
         $group = Group::where(['group_key' => $id])->first();
         if (!$group)
             return $this->fail("Group not found.", 404);
-
         $contributers = [];
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        if ($group->created_by != auth()->id() || !in_array(auth()->id(), $contributers)) {
+        if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
             return $this->fail("You don't have an access to this group.", 403);
         }
         $limit        = $request->limit ?? 20;
@@ -220,16 +229,16 @@ class GroupController extends Controller
 
         $data = [];
         foreach ($contributers as $cont) {
-            $data[] = new UserResource($cont->user);
+            $data[] = new ContributerResource($cont);
         }
         return $this->success($data);
     }
-
 
     public function destroy(Request $request)
     {
         DB::beginTransaction();
         if (!$group = Group::where(['group_key' => $request->group_key, "created_by" => auth()->id()])->first()) return $this->fail('Group not found!', 404);
+        if ($group->is_public) return $this->fail("Can not delete this group!");
         $name = $group->name;
         $id = $group->id;
         //Omar
@@ -242,6 +251,7 @@ class GroupController extends Controller
             "Group '" . $name . "' deleted by:'" . $user->account_name . "'",
             5
         );
+        //
         if (
             Group::query()->where('id', $group->id)->whereDoesntHave('files', function ($query) use ($request, $group) {
                 $query->where('group_id', $group->id)->whereNotNull('reserved_by');

@@ -15,6 +15,7 @@ use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 use Carbon\Carbon;
 use App\Http\Resources\UserResource;
+use App\Models\Group\GroupUser;
 
 class AuthController extends Controller
 {
@@ -58,6 +59,10 @@ class AuthController extends Controller
             "token" => $user->createToken($user->id . $user->first_name . Str::random(32))->plainTextToken,
             "user" => new UserResource($user),
         ];
+        GroupUser::firstOrCreate([ // Add user to the public group
+            "group_id" => 1,
+            "user_id" => $user->id,
+        ]);
         DB::commit();
         return $this->success($data, "Welcome " . $user->first_name . "!", 201);
     }
