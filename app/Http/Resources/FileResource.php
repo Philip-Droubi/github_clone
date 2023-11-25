@@ -19,14 +19,14 @@ class FileResource extends JsonResource
             "desc"        => $this->description,
             "file_key"    => $this->file_key,
             "group_id"    => $this->group_id,
-            // "path"        => $this->path,        
-            "reserved_by" => $this->reserved_by, 
-            "reserved_by_name" =>$this->reservedBy==null?"": $this->reservedBy->getFullName(), 
+            "group_name"  => $this->group->name,
+            // "path"        => $this->path,
+            "reserved_by" => $this->reserved_by,
+            "reserved_by_name" => $this->reservedBy == null ? "" : $this->reservedBy->getFullName(),
             "size"        => $this->size,
-            "type"        => $this->mime,        
+            "type"        => $this->mime,
             "created_at"  => Carbon::parse($this->created_at)->format("Y-m-d H:i"),
 
         ];
     }
 }
-

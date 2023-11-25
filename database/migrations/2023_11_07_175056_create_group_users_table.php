@@ -15,8 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->integer('number_of_contributions')->default(0);
-            $table->dateTime('last_contribution_at')->nullable();
             $table->dateTime('removed_at')->nullable(); // To not remove user contributions on leave
             $table->timestamps();
         });

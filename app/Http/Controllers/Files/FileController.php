@@ -119,11 +119,10 @@ class FileController extends Controller
         //
     }
 
-
     public function getFilesByGroupID(string $id, Request $request)
     {
         //Omar
-
+        //TODO : CHECK IF WITH CAN WORK HERE
         $group = Group::where(['group_key' => $id])->with('contributers')->first();
         if (!$group)
             return $this->fail("Group with key '" . $id . "' not found.", 404);
@@ -132,7 +131,7 @@ class FileController extends Controller
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        if ($group->created_by != auth()->id() || !in_array(auth()->id(), $contributers)) {
+        if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
             return $this->fail("You don't have an access to this group files.", 403);
         }
         $order = $request->orderBy ?? "name";
@@ -221,7 +220,6 @@ class FileController extends Controller
         DB::commit();
         return $this->success([], "Update success");
     }
-
 
     public function destroy(Request $request)
     {

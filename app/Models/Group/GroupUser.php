@@ -14,9 +14,6 @@ class GroupUser extends Model
     protected $fillable = [
         'group_id',
         'user_id',
-        'number_of_contributions',
-        'last_contribution_at',
-        'verified_at',
         'removed_at',
     ];
 
