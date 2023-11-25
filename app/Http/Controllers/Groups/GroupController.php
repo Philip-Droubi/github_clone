@@ -29,7 +29,7 @@ class GroupController extends Controller
     use GeneralTrait, HelperTrait;
     public function index(Request $requet)
     {
-        //TODO: add admin gate
+        
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
@@ -123,6 +123,7 @@ class GroupController extends Controller
 
     public function getGroupsByID(Request $requet) // user groups
     {
+        
         // Omar
         if (!$user = User::find($requet->id ?? auth()->id()))
             return $this->fail("User not found", 404);
@@ -249,7 +250,7 @@ class GroupController extends Controller
             $group->id,
             auth()->id(),
             "Delete",
-            "Group '" . $name . "' deleted by:'" . $user->account_name . "'",
+            "Group '" . $name . "' deleted by:@'" . $user->account_name . "'",
             5
         );
         //
