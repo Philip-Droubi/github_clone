@@ -23,6 +23,10 @@ class GroupLog extends Model
     {
         $this->attributes['additional_info'] = trim($value);
     }
+    public function setActionAttribute($value)
+    {
+        $this->attributes['action'] = strtolower(trim($value));
+    }
 
     //relations
     public function user()

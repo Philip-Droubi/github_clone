@@ -29,6 +29,11 @@ class FileLog extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+    public function setActionAttribute($value)
+    {
+        $this->attributes['action'] = strtolower(trim($value));
+    }
+
 
     public function file()
     {
