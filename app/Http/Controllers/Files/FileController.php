@@ -200,6 +200,7 @@ class FileController extends Controller
                         "size" => (float)round($newFile->getSize() / 1024, 3), //save in KB
                         "path" => $path,
                         "file_key" => $this->generateUniqeStringKey(File::class, "file_key", Config::get("custom.file_key_length")),
+                        "updated_at" => Carbon::now()->format("Y-m-d H:i:s"),
                     ]);
                     $fileReplaced = true;
                 } else throw new Exception("Failed to store files");
