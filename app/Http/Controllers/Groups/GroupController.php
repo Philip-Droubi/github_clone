@@ -29,7 +29,7 @@ class GroupController extends Controller
     use GeneralTrait, HelperTrait;
     public function index(Request $requet)
     {
-        
+
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
@@ -123,7 +123,6 @@ class GroupController extends Controller
 
     public function getGroupsByID(Request $requet) // user groups
     {
-        
         // Omar
         if (!$user = User::find($requet->id ?? auth()->id()))
             return $this->fail("User not found", 404);

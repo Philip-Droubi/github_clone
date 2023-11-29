@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class UserObserver
 {
@@ -18,7 +19,8 @@ class UserObserver
      */
     public function updated(User $user): void
     {
-        //
+        if (Cache::has("user-" . $user->id))
+            Cache::forget("user-" . $user->id);
     }
 
     /**
@@ -26,7 +28,8 @@ class UserObserver
      */
     public function deleted(User $user): void
     {
-        //
+        if (Cache::has("user-" . $user->id))
+            Cache::forget("user-" . $user->id);
     }
 
     /**

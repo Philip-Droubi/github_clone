@@ -123,18 +123,18 @@ class FileController extends Controller
         //TODO : CHECK IF WITH CAN WORK HERE
         $group = Group::where(['group_key' => $id])->with('contributers')->first();
         if (!$group)
-            return $this->fail("Group with key '" . $id . "' not found.", 404);
+            return $this->fail("Group not found.", 404);
 
         $contributers = [];
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
         if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
-            return $this->fail("You don't have an access to this group files.", 403);
+            return $this->fail("You don't have access to this group files.", 403);
         }
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
-        $limit = $request->limit ?? 20;
+        $limit = $request->limit ?? 40;
         $files = File::where('group_id', $group->id)
             ->where("name", "LIKE", "%" . $request->name . "%")
             ->orderBy($order, $desc)
@@ -153,7 +153,7 @@ class FileController extends Controller
             return $this->fail("User not found", 404);
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
-        $limit = $request->limit ?? 20;
+        $limit = $request->limit ?? 40;
         $files = File::where(['created_by' => $user->id])
             ->where("name", "LIKE", "%" . $request->name . "%")
             ->orderBy($order, $desc)->paginate($limit);;
