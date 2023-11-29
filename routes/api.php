@@ -21,7 +21,7 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
     Route::controller(AuthController::class)->group(function () {
         Route::get("/logout", "logout");
         Route::get("/logoutAll", "logoutAllDevices");
-        Route::get("/users", "index")->middleware('admin');
+        Route::get("/users", "index");
         Route::get("/profile/{id?}", "show");
         Route::put("/update_profile", "update");
     });
@@ -49,10 +49,8 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
     });
     Route::prefix("groups_log")->controller(GroupLogController::class)->group(function () {
         Route::get("/", "index")->middleware('admin');
-        
     });
     Route::prefix("files_log")->controller(FileLogController::class)->group(function () {
         Route::get("/", "index")->middleware('admin');
-
     });
 });

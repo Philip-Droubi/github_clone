@@ -22,6 +22,7 @@ class AuthController extends Controller
     use GeneralTrait, HelperTrait;
     public function index(Request $request)
     {
+        $limit = $request->limit ?? 25;
         $users = User::query();
         if ($text = $request->search) {
             $users->where(function ($query) use ($text) {
@@ -31,7 +32,7 @@ class AuthController extends Controller
                     ->orWhereRaw("concat(first_name,' ', last_name) SOUNDS LIKE '%$text%' ");
             });
         }
-        $users = $users->paginate(25);
+        $users = $users->paginate($limit);
         $data = [];
         foreach ($users as $user) {
             $data[] = new UserResource($user);
