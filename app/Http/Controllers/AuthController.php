@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\UserResource;
 use App\Models\Group\GroupUser;
 
@@ -39,6 +40,7 @@ class AuthController extends Controller
         }
         return $this->success($data);
     }
+
     public function register(UserRegisterRequest $request)
     {
         DB::beginTransaction();
@@ -101,9 +103,16 @@ class AuthController extends Controller
 
     public function show(Request $request)
     {
-        if (!$request->id)
-            return $this->success(new UserResource(Auth::user()));
+        if (!$request->id) {
+            $user = Cache::remember("user-" . auth()->id(), 3600 * 24, function () {
+                return Auth::user();
+            });
+            return $this->success(new UserResource($user));
+        }
         if (!$user = User::find($request->id)) return $this->fail("Not found!", 404);
+        $user = Cache::remember("user-" . $request->id, 3600 * 24, function () use ($request) {
+            return $user = User::find($request->id);
+        });
         return $this->success(new UserResource($user));
     }
 

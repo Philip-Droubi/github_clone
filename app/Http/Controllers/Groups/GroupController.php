@@ -9,6 +9,7 @@ use App\Http\Resources\FileResource;
 use App\Http\Resources\GroupResource;
 use App\Http\Resources\UserResource;
 use App\Models\File\File;
+use App\Models\Group\Commit;
 use App\Models\Group\GroupUser;
 use Illuminate\Http\Request;
 use App\Models\Group\Group;
@@ -29,7 +30,7 @@ class GroupController extends Controller
     use GeneralTrait, HelperTrait;
     public function index(Request $requet)
     {
-        
+
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
@@ -91,19 +92,39 @@ class GroupController extends Controller
         return true;
     }
 
-    public function show(Request $request, string $id)
+    public function show(Request $request)
     {
         //Omar
-        $group = Group::where(['group_key' => $id])->with('owner', 'contributers')->first();
+        $group = Group::where(['group_key' => $request->group_key])->with('owner', 'contributers')->first();
         if (!$group)
-            return $this->fail("Group with key '" . $request->id . "' not found.", 404);
+            return $this->fail("Group not found.", 404);
         $contributers = [];
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
         if ($group->owner->id != auth()->id() || !in_array(auth()->id(), $contributers))
             return $this->fail("You don't have access to this group.", 403);
-        return $this->success($group);
+        $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("id")->toArray())
+            ->with("commits", function ($q) use ($group) {
+                return $q->where(["commiter_id" => auth()->id(), "group_id" => $group->id])->orderBy("created_at", "Desc")->first();
+            })->get();
+        $contributersData = [];
+        foreach ($contributers as $cont) {
+            $contributersData[] = [
+                "id" => $cont->id,
+                "account_name" => "@" . $cont->account_name,
+                "full_name" => $cont->getFullName(),
+                "img" => is_null($cont->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $cont->img,
+                "last_commit" => $cont->commits->isNotEmpty()
+                    ? (string)Carbon::parse($cont->commits[0]->created_at)->format("Y-m-d H:i:s")
+                    : "Did not commit yet!",
+            ];
+        }
+        $data[] = [
+            ...(new GroupResource($group))->toArray(request()),
+            "contributers" => $contributersData
+        ];
+        return $this->success($data);
     }
 
     // public function getMyGroups(Request $requet)
@@ -123,24 +144,57 @@ class GroupController extends Controller
 
     public function getGroupsByID(Request $requet) // user groups
     {
-        
         // Omar
+        // if (!$user = User::find($requet->id ?? auth()->id()))
+        //     return $this->fail("User not found", 404);
+        // $order  = $requet->orderBy ?? "name";
+        // $desc   = $requet->desc ?? "desc";
+        // $limit  = $requet->limit ?? 20;
+        // $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
+        //     ->with('contributers')
+        //     ->orderBy($order, $desc)->paginate($limit);
+        // $data   = [];
+        // foreach ($groups as $group) {
+        //     $contributers = [];
+        //     foreach ($group->contributers as $cont) {
+        //         $contributers[] = $cont->user_id;
+        //     }
+        //     if (in_array($user->id, $contributers))
+        //         $data[] = new GroupResource($group);
+        // }
+        // return $this->success($data);
+
+        //بيليب
         if (!$user = User::find($requet->id ?? auth()->id()))
             return $this->fail("User not found", 404);
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
         $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
-            ->with('contributers')
+            ->where("created_by", $user->id)
             ->orderBy($order, $desc)->paginate($limit);
         $data   = [];
         foreach ($groups as $group) {
-            $contributers = [];
-            foreach ($group->contributers as $cont) {
-                $contributers[] = $cont->user_id;
+            $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("id")->toArray())
+                ->with("commits", function ($q) use ($group) {
+                    return $q->where(["commiter_id" => auth()->id(), "group_id" => $group->id])->orderBy("created_at", "Desc")->first();
+                })->get();
+            $contributersData = [];
+            foreach ($contributers as $cont) {
+                $contributersData[] = [
+                    "id" => $cont->id,
+                    "account_name" => "@" . $cont->account_name,
+                    "full_name" => $cont->getFullName(),
+                    "img" => is_null($cont->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $cont->img,
+                    // "last_commit" => $cont->commits->isNotEmpty()
+                    // ? (string)Carbon::parse($cont->commits[0]->created_at)->format("Y-m-d H:i:s")
+                    // : "Did not commit yet!",
+                ];
             }
-            if (in_array($user->id, $contributers))
-                $data[] = new GroupResource($group);
+            $data[] = [
+                ...(new GroupResource($group))->toArray(request()),
+                "contributers" => $contributersData
+            ];
         }
         return $this->success($data);
     }

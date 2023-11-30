@@ -22,11 +22,11 @@ class FileResource extends JsonResource
             "group_name"  => $this->group->name,
             // "path"        => $this->path,
             "reserved_by" => $this->reserved_by,
-            "reserved_by_name" => $this->reservedBy == null ? "" : $this->reservedBy->getFullName(),
+            "reserved_by_name" => $this->reservedBy ?? "",
             "size"        => $this->size,
             "type"        => $this->mime,
             "created_at"  => Carbon::parse($this->created_at)->format("Y-m-d H:i"),
-
+            "last_update" => Carbon::parse($this->updated_at)->format("Y-m-d H:i"),
         ];
     }
 }

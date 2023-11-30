@@ -29,8 +29,8 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
         Route::get("/", "index")->middleware('admin');
         // Route::get("/my", "getMyGroups"); Dublicated
         Route::get("/user_groups/{id?}", "getGroupsByID"); //user id
-        Route::get("/group_contributers/{id}", "getGroupContributers"); //user id
-        Route::get("/{id}", "show"); // group id or group key
+        Route::get("/group_contributers/{id}", "getGroupContributers"); //group key
+        Route::get("/{group_key}", "show"); // group key
         Route::post("/", "store");
         Route::put("/{group_key}", "update");
         Route::delete("/{group_key}", "destroy");
