@@ -8,25 +8,33 @@ use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-
+use App\Models\Group\Group;
 
 class GroupLogController extends Controller
 {
-    use HelperTrait,GeneralTrait;
-    public function index(Request $requet)
+    use HelperTrait, GeneralTrait;
+    public function index(Request $request)
     {
         //Omar
-        $actions =["create","update","delete"];
-        $order = $requet->orderBy ?? "importance";
-        $desc  = $requet->desc ?? "desc";
-        $limit = $requet->limit ?? 20;
-        $logs = GroupLog::orderBy($order, $desc)->paginate($limit);
-        if(in_array(strtolower($requet->action),$actions))
-            $logs = $logs->where('action',strtolower($requet->action));
+        $actions = ["create", "update", "delete"];
+        $order = $request->orderBy ?? "importance";
+        $desc  = $request->desc ?? "desc";
+        $limit = $request->limit ?? 25;
+        if ($request->group_key)
+            $logs = GroupLog::whereIn("group_id", Group::where("group_key", $request->group_key)->pluck("id")->toArray())
+                ->orderBy($order, $desc);
+        else $logs = GroupLog::whereIn("group_id", Group::pluck("id")->toArray())
+            ->orderBy($order, $desc);
+        if (in_array(strtolower($request->action), $actions))
+            $logs = $logs->where('action', strtolower($request->action));
+        $logs = $logs->paginate($limit);
         $data  = [];
+        $items  = [];
         foreach ($logs as $log) {
-            $data[] = new LogResource($log);
+            $items[] = new LogResource($log);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($logs, $data);
         return $this->success($data);
     }
 }

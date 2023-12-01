@@ -7,11 +7,13 @@ use App\Models\Group\Commit;
 use App\Models\Group\CommitFile;
 use App\Models\Group\Group;
 use App\Models\Group\GroupLog;
+use ArrayObject;
 use Carbon\Carbon;
 use GuzzleHttp\Psr7\Request;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Concerns\ToArray;
 use ZipArchive;
 
 trait HelperTrait
@@ -117,5 +119,20 @@ trait HelperTrait
         if ($commitFiles)
             CommitFile::insert($commitFiles);
         return true;
+    }
+
+    public function setPaginationData($objects, array $data): array
+    {
+        $data['last_page'] = $objects->lastPage();
+        $data['total'] = $objects->total();
+        $data['perPage'] = $objects->perPage();
+        $data['currentPage'] = $objects->currentPage();
+        return $data;
+        // return [
+        //     'last_page' => $objects->lastPage(),
+        //     'total' => $objects->total(),
+        //     'currentPage' => $objects->currentPage(),
+        //     'perPage' => $objects->perPage(),
+        // ];
     }
 }
