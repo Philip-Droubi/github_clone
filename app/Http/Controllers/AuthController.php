@@ -35,9 +35,12 @@ class AuthController extends Controller
         }
         $users = $users->paginate($limit);
         $data = [];
+        $items = [];
         foreach ($users as $user) {
-            $data[] = new UserResource($user);
+            $items[] = new UserResource($user);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($users, $data);
         return $this->success($data);
     }
 

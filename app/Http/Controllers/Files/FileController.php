@@ -33,11 +33,15 @@ class FileController extends Controller
             ->where("name", "LIKE", "%" . $requet->name . "%")
             ->orderBy($order, $desc)->paginate($limit);
         $data  = [];
+        $items  = [];
         foreach ($files as $file) {
-            $data[] = new FileResource($file);
+            $items[] = new FileResource($file);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($files, $data);
         return $this->success($data);
     }
+
     public function store(FileRequest $request)
     {
         $group   = Group::where("group_key", $request->group_key)->first();
@@ -140,9 +144,12 @@ class FileController extends Controller
             ->orderBy($order, $desc)
             ->paginate($limit);
         $data = [];
+        $items = [];
         foreach ($files as $file) {
-            $data[] = new FileResource($file);
+            $items[] = new FileResource($file);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($files, $data);
         return $this->success($data);
     }
 
@@ -158,9 +165,12 @@ class FileController extends Controller
             ->where("name", "LIKE", "%" . $request->name . "%")
             ->orderBy($order, $desc)->paginate($limit);;
         $data = [];
+        $items = [];
         foreach ($files as $file) {
-            $data[] = new FileResource($file);
+            $items[] = new FileResource($file);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($files, $data);
         return $this->success($data);
     }
 

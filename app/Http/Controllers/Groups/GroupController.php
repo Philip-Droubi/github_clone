@@ -30,17 +30,19 @@ class GroupController extends Controller
     use GeneralTrait, HelperTrait;
     public function index(Request $requet)
     {
-
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
         $groups = Group::where("created_by", auth()->id())
             ->where("name", "LIKE", "%" . $requet->name . "%")
             ->orderBy($order, $desc)->paginate($limit);
-        $data   = [];
+        $data = [];
+        $items = [];
         foreach ($groups as $group) {
-            $data[] = new GroupResource($group);
+            $items[] = new GroupResource($group);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($groups, $data);
         return $this->success($data);
     }
 
@@ -104,7 +106,7 @@ class GroupController extends Controller
         }
         if ($group->owner->id != auth()->id() || !in_array(auth()->id(), $contributers))
             return $this->fail("You don't have access to this group.", 403);
-        $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("id")->toArray())
+        $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
             ->with("commits", function ($q) use ($group) {
                 return $q->where(["commiter_id" => auth()->id(), "group_id" => $group->id])->orderBy("created_at", "Desc")->first();
             })->get();
@@ -174,8 +176,9 @@ class GroupController extends Controller
             ->where("created_by", $user->id)
             ->orderBy($order, $desc)->paginate($limit);
         $data   = [];
+        $items   = [];
         foreach ($groups as $group) {
-            $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("id")->toArray())
+            $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
                 ->with("commits", function ($q) use ($group) {
                     return $q->where(["commiter_id" => auth()->id(), "group_id" => $group->id])->orderBy("created_at", "Desc")->first();
                 })->get();
@@ -191,11 +194,13 @@ class GroupController extends Controller
                     // : "Did not commit yet!",
                 ];
             }
-            $data[] = [
+            $items[] = [
                 ...(new GroupResource($group))->toArray(request()),
                 "contributers" => $contributersData
             ];
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($groups, $data);
         return $this->success($data);
     }
 
@@ -284,9 +289,12 @@ class GroupController extends Controller
         $contributers = GroupUser::where('group_id', $group->id)->paginate($limit);
 
         $data = [];
+        $items = [];
         foreach ($contributers as $cont) {
-            $data[] = new ContributerResource($cont);
+            $items[] = new ContributerResource($cont);
         }
+        $data["items"] = $items;
+        $data = $this->setPaginationData($contributers, $data);
         return $this->success($data);
     }
 
