@@ -29,8 +29,7 @@ class FileController extends Controller
         $order = $requet->orderBy ?? "name";
         $desc  = $requet->desc ?? "desc";
         $limit = $requet->limit ?? 20;
-        $files = File::where("created_by", auth()->id())
-            ->where("name", "LIKE", "%" . $requet->name . "%")
+        $files = File::where("name", "LIKE", "%" . $requet->name . "%")
             ->orderBy($order, $desc)->paginate($limit);
         $data  = [];
         $items  = [];
