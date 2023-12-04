@@ -33,8 +33,7 @@ class GroupController extends Controller
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
-        $groups = Group::where("created_by", auth()->id())
-            ->where("name", "LIKE", "%" . $requet->name . "%")
+        $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
             ->orderBy($order, $desc)->paginate($limit);
         $data = [];
         $items = [];
@@ -173,7 +172,9 @@ class GroupController extends Controller
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
         $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
-            ->where("created_by", $user->id)
+            ->where(function($q) use ($user){
+                $q->where("created_by", $user->id)->orWhere('is_public',true);
+            })
             ->orderBy($order, $desc)->paginate($limit);
         $data   = [];
         $items   = [];
