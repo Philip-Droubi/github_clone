@@ -18,6 +18,7 @@ class GroupResource extends JsonResource
             "desc"         => $this->description,
             "group_key"    => $this->group_key,
             "created_at"   => Carbon::parse($this->created_at)->format("Y-m-d H:i"),
+            "created_by"   => $this->owner->getFullName(),
             "files"        => count($this->files),
             "contributers" => count($this->contributers),
             "commits"      => count($this->commits),

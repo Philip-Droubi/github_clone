@@ -28,8 +28,8 @@ class FileRequest extends FormRequest
         return [
             "commit" => ["nullable", "string", "max:255"],
             "group_key" => ["required", "exists:groups,group_key"],
-            "files_array" => ["required", "array", "max:20"],
-            "files_array.*" => ["file", "max:10240"], //At most 10MB of data at once
+            "files_array" => ["required", "array", "max:20", "min:1"],
+            "files_array.*" => ["required", "file", "max:10240"], //At most 10MB of data at once
             "files_desc" => ["nullable", "array", "max:20"],
             "files_desc.*" => ["nullable", "string", "max:100"],
         ];
