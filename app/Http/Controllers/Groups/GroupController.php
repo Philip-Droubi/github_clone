@@ -115,6 +115,8 @@ class GroupController extends Controller
                 "id" => $cont->id,
                 "account_name" => "@" . $cont->account_name,
                 "full_name" => $cont->getFullName(),
+                "first_name" => $cont->first_name,
+                "last_name" => $cont->last_name,
                 "img" => is_null($cont->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $cont->img,
                 "last_commit" => $cont->commits->isNotEmpty()
                     ? (string)Carbon::parse($cont->commits[0]->created_at)->format("Y-m-d H:i:s")
@@ -172,8 +174,8 @@ class GroupController extends Controller
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
         $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
-            ->where(function($q) use ($user){
-                $q->where("created_by", $user->id)->orWhere('is_public',true);
+            ->where(function ($q) use ($user) {
+                $q->where("created_by", $user->id)->orWhere('is_public', true);
             })
             ->orderBy($order, $desc)->paginate($limit);
         $data   = [];
@@ -189,6 +191,8 @@ class GroupController extends Controller
                     "id" => $cont->id,
                     "account_name" => "@" . $cont->account_name,
                     "full_name" => $cont->getFullName(),
+                    "first_name" => $cont->first_name,
+                    "last_name" => $cont->last_name,
                     "img" => is_null($cont->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $cont->img,
                     // "last_commit" => $cont->commits->isNotEmpty()
                     // ? (string)Carbon::parse($cont->commits[0]->created_at)->format("Y-m-d H:i:s")
@@ -207,10 +211,10 @@ class GroupController extends Controller
 
     public function update(GroupRequest $request)
     {
-        $actionUser   = User::find(auth()->id())->first();
-        $group        = Group::where("group_key", $request->group_key)->first();
-        $oldGroupName = $group->name;
+        if ($group = Group::where(["group_key" => $request->group_key, "created_by", auth()->id()])->first()) return $this->fail("Group not found!");
         if ($group->is_public) return $this->fail("Can not update this group!");
+        $actionUser   = User::find(auth()->id())->first();
+        $oldGroupName = $group->name;
         if (!$this->checkGroupName($request->name, auth()->id(), [$group->id])) return $this->fail("Can not use This name, name already used");
         DB::beginTransaction();
         $request->name ? ($request->name != $group->name ? $group->name = $request->name : false) : false;
