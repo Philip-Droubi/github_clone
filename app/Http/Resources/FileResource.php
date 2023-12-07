@@ -23,8 +23,9 @@ class FileResource extends JsonResource
             // "path"        => $this->path,
             "reserved_by" => $this->reserved_by,
             "reserved_by_name" => $this->reservedBy ?? "",
-            "size"        => $this->size,
+            "size"        => $this->size . ' KB',
             "type"        => $this->mime,
+            "created_by"  => $this->owner->getFullName(),
             "created_at"  => Carbon::parse($this->created_at)->format("Y-m-d H:i"),
             "last_update" => Carbon::parse($this->updated_at)->format("Y-m-d H:i"),
         ];
