@@ -43,6 +43,7 @@ class FileController extends Controller
 
     public function store(FileRequest $request)
     {
+        // return $this->success($request->files_array);
         $group   = Group::where("group_key", $request->group_key)->first();
         $user    = $request->user();
         $desc_id = 0;
