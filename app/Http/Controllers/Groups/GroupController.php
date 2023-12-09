@@ -130,62 +130,27 @@ class GroupController extends Controller
         return $this->success($data);
     }
 
-    // public function getMyGroups(Request $requet)
-    // {
-    //     $order  = $requet->orderBy ?? "name";
-    //     $desc   = $requet->desc ?? "desc";
-    //     $limit  = $requet->limit ?? 20;
-    //     $groups = Group::where("created_by", auth()->id())
-    //         ->where("name", "LIKE", "%" . $requet->name . "%")
-    //         ->orderBy($order, $desc)->paginate($limit);
-    //     $data   = [];
-    //     foreach ($groups as $group) {
-    //         $data[] = new GroupResource($group);
-    //     }
-    //     return $this->success($data);
-    // }
-
-    public function getGroupsByID(Request $requet) // user groups
+    public function getGroupsByID(Request $request) // user groups
     {
-        // Omar
-        // if (!$user = User::find($requet->id ?? auth()->id()))
-        //     return $this->fail("User not found", 404);
-        // $order  = $requet->orderBy ?? "name";
-        // $desc   = $requet->desc ?? "desc";
-        // $limit  = $requet->limit ?? 20;
-        // $groups = Group::where("name", "LIKE", "%" . $requet->name . "%")
-        //     ->with('contributers')
-        //     ->orderBy($order, $desc)->paginate($limit);
-        // $data   = [];
-        // foreach ($groups as $group) {
-        //     $contributers = [];
-        //     foreach ($group->contributers as $cont) {sh
-        //         $contributers[] = $cont->user_id;
-        //     }
-        //     if (in_array($user->id, $contributers))
-        //         $data[] = new GroupResource($group);
-        // }
-        // return $this->success($data);
-
-        //بيليب
-        if (!$user = User::find($requet->id ?? auth()->id()))
+        if (!$user = User::find($request->id ?? auth()->id()))
             return $this->fail("User not found", 404);
-        $order  = $requet->orderBy ?? "name";
-        $desc   = $requet->desc ?? "desc";
-        $limit  = $requet->limit ?? 20;
-        $currentUser=User::find(auth()->id());
-        $groups =  Group::where("name", "LIKE", "%" . $requet->name . "%")->with('contributers')
-            ->orderBy($order, $desc)->paginate($limit);
-          
+        $order  = $request->orderBy ?? "name";
+        $desc   = $request->desc ?? "desc";
+        $limit  = $request->limit ?? 20;
+        //////////////////////////////////
+        if (!$request->id)
+            $groups = $this->getMyGroups($request);
+        else {
+            if ($request->user()->role == 1)
+                $groups = $this->getGroupsForOthersAsAdmin($request, $user);
+            else
+                $groups = $this->getGroupsForOthers($request, $user);
+        }
+        // Dont Touch من هون ولتحت
         $data   = [];
         $items   = [];
         foreach ($groups as $group) {
-            if( (in_array($user->id,$group->contributers->pluck('user_id')->toArray()) &&
-            in_array($currentUser->id,$group->contributers->pluck('user_id')->toArray()))
-            ||$group->is_public 
-            || $currentUser->role==1)
-            {
-                $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
+            $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
                 ->with("commits", function ($q) use ($group) {
                     return $q->where(["commiter_id" => auth()->id(), "group_id" => $group->id])->orderBy("created_at", "Desc")->first();
                 })->get();
@@ -207,12 +172,43 @@ class GroupController extends Controller
                 ...(new GroupResource($group))->toArray(request()),
                 "contributers" => $contributersData
             ];
-            }
-           
         }
         $data["items"] = $items;
         $data = $this->setPaginationData($groups, $data);
         return $this->success($data);
+    }
+
+    public function getMyGroups($request)
+    {
+        $order  = $request->orderBy ?? "name";
+        $desc   = $request->desc ?? "desc";
+        $limit  = $request->limit ?? 20;
+        return $groups = Group::query()->where("name", "LIKE", "%" . $request->name . "%")
+            ->whereIn("id", GroupUser::where("user_id", auth()->id())->pluck("group_id")->toArray())
+            ->orderBy($order, $desc)->paginate($limit);
+    }
+
+    public function getGroupsForOthersAsAdmin($request, $user)
+    {
+        $order  = $request->orderBy ?? "name";
+        $desc   = $request->desc ?? "desc";
+        $limit  = $request->limit ?? 20;
+        return $groups = Group::query()->where("name", "LIKE", "%" . $request->name . "%")
+            ->whereIn("id", GroupUser::where("user_id", $user->id)->pluck("group_id")->toArray())
+            ->orderBy($order, $desc)->paginate($limit);
+    }
+
+    public function getGroupsForOthers($request, $user)
+    {
+        $order  = $request->orderBy ?? "name";
+        $desc   = $request->desc ?? "desc";
+        $limit  = $request->limit ?? 20;
+        return $groups = Group::query()->where("name", "LIKE", "%" . $request->name . "%")
+            ->whereIn("id", GroupUser::where("user_id", $user->id)->pluck("group_id")->toArray())
+            ->whereHas("contributers", function ($q) {
+                return $q->where("user_id", auth()->id());
+            })
+            ->orderBy($order, $desc)->paginate($limit);
     }
 
     public function update(GroupRequest $request)
@@ -293,8 +289,7 @@ class GroupController extends Controller
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        $user = User::find(auth()->id());
-        if ($group->created_by != $user->id && !$group->is_public && !in_array($user->id, $contributers) &&$user->role!=1 ) {
+        if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
             return $this->fail("You don't have an access to this group.", 403);
         }
         $limit        = $request->limit ?? 20;
