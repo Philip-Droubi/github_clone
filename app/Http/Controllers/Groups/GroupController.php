@@ -159,7 +159,7 @@ class GroupController extends Controller
         // $data   = [];
         // foreach ($groups as $group) {
         //     $contributers = [];
-        //     foreach ($group->contributers as $cont) {
+        //     foreach ($group->contributers as $cont) {sh
         //         $contributers[] = $cont->user_id;
         //     }
         //     if (in_array($user->id, $contributers))
@@ -173,20 +173,19 @@ class GroupController extends Controller
         $order  = $requet->orderBy ?? "name";
         $desc   = $requet->desc ?? "desc";
         $limit  = $requet->limit ?? 20;
-        $groups =$user->role !=1 ? Group::where("name", "LIKE", "%" . $requet->name . "%")
-            ->where(function ($q) use ($user) {
-                $q->whereIn('id', $user->groups->pluck('id')->toArray())->
-                //where("created_by", $user->id)->
-                orWhere('is_public', true);
-            })
-            ->orderBy($order, $desc)->paginate($limit)
-            :
-            Group::where("name", "LIKE", "%" . $requet->name . "%")
+        $currentUser=User::find(auth()->id());
+        $groups =  Group::where("name", "LIKE", "%" . $requet->name . "%")->with('contributers')
             ->orderBy($order, $desc)->paginate($limit);
+          
         $data   = [];
         $items   = [];
         foreach ($groups as $group) {
-            $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
+            if( (in_array($user->id,$group->contributers->pluck('user_id')->toArray()) &&
+            in_array($currentUser->id,$group->contributers->pluck('user_id')->toArray()))
+            ||$group->is_public 
+            || $currentUser->role==1)
+            {
+                $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
                 ->with("commits", function ($q) use ($group) {
                     return $q->where(["commiter_id" => auth()->id(), "group_id" => $group->id])->orderBy("created_at", "Desc")->first();
                 })->get();
@@ -208,6 +207,8 @@ class GroupController extends Controller
                 ...(new GroupResource($group))->toArray(request()),
                 "contributers" => $contributersData
             ];
+            }
+           
         }
         $data["items"] = $items;
         $data = $this->setPaginationData($groups, $data);
@@ -292,7 +293,8 @@ class GroupController extends Controller
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
+        $user = User::find(auth()->id());
+        if ($group->created_by != $user->id && !$group->is_public && !in_array($user->id, $contributers) &&$user->role!=1 ) {
             return $this->fail("You don't have an access to this group.", 403);
         }
         $limit        = $request->limit ?? 20;
