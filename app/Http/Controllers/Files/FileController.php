@@ -225,7 +225,7 @@ class FileController extends Controller
             $file->group_id,
             $user->id,
             "Replace File",
-            "User ' @" . $user->account_name . " (" . $user->getFillName() . ") updated " . $oldFile->name . ".",
+            "User ' @" . $user->account_name . " (" . $user->getFullName() . ") updated " . $oldFile->name . ".",
             [$file->id]
         );
         DB::commit();
