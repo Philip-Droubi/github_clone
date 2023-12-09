@@ -216,7 +216,7 @@ class GroupController extends Controller
 
     public function update(GroupRequest $request)
     {
-        if ($group = Group::where(["group_key" => $request->group_key, "created_by", auth()->id()])->first()) return $this->fail("Group not found!");
+        if ($group = Group::where(["group_key" => $request->group_key, "created_by" => auth()->id()])->first()) return $this->fail("Group not found!");
         if ($group->is_public) return $this->fail("Can not update this group!");
         $actionUser   = User::find(auth()->id())->first();
         $oldGroupName = $group->name;
