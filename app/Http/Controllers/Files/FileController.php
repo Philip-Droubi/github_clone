@@ -43,9 +43,9 @@ class FileController extends Controller
 
     public function store(FileRequest $request)
     {
-        // return $this->success($request->files_array);
         $group   = Group::where("group_key", $request->group_key)->first();
         $user    = $request->user();
+        if (!in_array($user->id, $group->contributers->pluck("user_id")->toArray())) return $this->fail("Access Denied!", 403);
         $desc_id = 0;
         $fileCreated = [];
         if ($this->checkFilesNames($request->files_array, $group->id)) {
@@ -56,7 +56,7 @@ class FileController extends Controller
                         "name" => $file->getClientOriginalName(),
                         "description" => $request->files_desc[$desc_id] ?? null,
                         "mime" => $file->getClientOriginalExtension(),
-                        "size" => (float)round($file->getSize() / 1024, 3), //save in KB
+                        "size" => (float)round($file->getSize() / 1024, 2), //save in KB
                         "reserved_by" => null,
                         "path" => $path,
                         "file_key" => $this->generateUniqeStringKey(File::class, "file_key", Config::get("custom.file_key_length")),
