@@ -68,7 +68,6 @@ class GroupController extends Controller
                     "user_id" => $id,
                 ]);
         DB::commit();
-        //Omar
         //Add Log
         $user = User::find(auth()->id())->first();
         $this->createGroupLog(
@@ -95,7 +94,6 @@ class GroupController extends Controller
 
     public function show(Request $request)
     {
-        //Omar
         $group = Group::where(['group_key' => $request->group_key])->with('owner', 'contributers')->first();
         if (!$group)
             return $this->fail("Group not found.", 404);
@@ -103,7 +101,7 @@ class GroupController extends Controller
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        if ($group->owner->id != auth()->id() || !in_array(auth()->id(), $contributers))
+        if ($group->owner->id != auth()->id() || !in_array(auth()->id(), $contributers) || (auth()->user()->role != 1))
             return $this->fail("You don't have access to this group.", 403);
         $contributers = User::whereIn("id", GroupUser::where("group_id", $group->id)->limit(5)->pluck("user_id")->toArray())
             ->with("commits", function ($q) use ($group) {
@@ -137,7 +135,6 @@ class GroupController extends Controller
         $order  = $request->orderBy ?? "name";
         $desc   = $request->desc ?? "desc";
         $limit  = $request->limit ?? 20;
-        //////////////////////////////////
         if (!$request->id)
             $groups = $this->getMyGroups($request);
         else {
@@ -146,7 +143,6 @@ class GroupController extends Controller
             else
                 $groups = $this->getGroupsForOthers($request, $user);
         }
-        // Dont Touch من هون ولتحت
         $data   = [];
         $items   = [];
         foreach ($groups as $group) {
@@ -163,9 +159,6 @@ class GroupController extends Controller
                     "first_name" => $cont->first_name,
                     "last_name" => $cont->last_name,
                     "img" => is_null($cont->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $cont->img,
-                    // "last_commit" => $cont->commits->isNotEmpty()
-                    // ? (string)Carbon::parse($cont->commits[0]->created_at)->format("Y-m-d H:i:s")
-                    // : "Did not commit yet!",
                 ];
             }
             $items[] = [
@@ -222,7 +215,6 @@ class GroupController extends Controller
         $request->name ? ($request->name != $group->name ? $group->name = $request->name : false) : false;
         $request->exists('desc') ? ($request->desc != $group->description ? $group->description = $request->desc : false) : false;
         $group->save();
-        //Omar
         //Add Log
         if ($oldGroupName != $group->name) {
             $this->createGroupLog(
@@ -240,7 +232,6 @@ class GroupController extends Controller
                 if (!File::query()->where(["group_id" => $group->id, "reserved_by" => $id])->first()) {
                     if ($id != $group->created_by) // To not delete group owner
                         GroupUser::where(['group_id' => $group->id, "user_id" => $id])->delete();
-                    //Omar
                     //Add Log
                     $user = User::find($id)->first(); //TODO: check
                     $this->createGroupLog(
@@ -264,7 +255,6 @@ class GroupController extends Controller
                     "group_id" => $group->id,
                     "user_id" => $id,
                 ]);
-                //Omar
                 //Add Log
                 $user = User::find($id)->first(); //TODO: check
                 $this->createGroupLog(
@@ -281,7 +271,6 @@ class GroupController extends Controller
 
     public function getGroupContributers(string $id, Request $request)
     {
-        //Omar
         $group = Group::where(['group_key' => $id])->first();
         if (!$group)
             return $this->fail("Group not found.", 404);
@@ -289,9 +278,10 @@ class GroupController extends Controller
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
-            return $this->fail("You don't have an access to this group.", 403);
-        }
+        if ((auth()->user()->role != 1))
+            if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
+                return $this->fail("You don't have an access to this group.", 403);
+            }
         $limit        = $request->limit ?? 20;
         $contributers = GroupUser::where('group_id', $group->id)->paginate($limit);
 
@@ -312,7 +302,6 @@ class GroupController extends Controller
         if ($group->is_public) return $this->fail("Can not delete this group!");
         $name = $group->name;
         $id = $group->id;
-        //Omar
         //Add Log
         $user = User::find(auth()->id())->first();
         $this->createGroupLog(
@@ -340,7 +329,6 @@ class GroupController extends Controller
     {
         if (!$group = Group::where('group_key', $request->group_key)->whereIn("id", GroupUser::where("user_id", auth()->id())->pluck("group_id")->toArray())->first()) return $this->fail('Group not found!', 404);
         $files = File::where("group_id", $group->id)->get(['name', 'path']);
-        //TODO: Check if files reserved by users => then it could not be downloaded
         if (count($files) == 0) return $this->fail("This group has no files yet", 413);
         if ($zipFile = $this->createZipFile($group->name, $files))
             return response()->download($zipFile)->deleteFileAfterSend(true);

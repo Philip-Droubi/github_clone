@@ -27,7 +27,6 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
     });
     Route::prefix("groups")->controller(GroupController::class)->group(function () {
         Route::get("/", "index")->middleware('admin');
-        // Route::get("/my", "getMyGroups"); Dublicated
         Route::get("/user_groups/{id?}", "getGroupsByID"); //user id
         Route::get("/group_contributers/{id}", "getGroupContributers"); //group key
         Route::get("/{group_key}", "show"); // group key
@@ -37,7 +36,7 @@ Route::group(['middleware' => ['auth:sanctum', 'lastseen']], function () {
         Route::get("/clone/{group_key}", "cloneGroup");
     });
     Route::prefix("files")->controller(FileController::class)->group(function () {
-        Route::get("/", "index")->middleware('admin');;
+        Route::get("/", "index")->middleware('admin');
         Route::post("/", "store")->middleware('max_files');
         Route::delete("/{id}", "destroy");
         Route::get("/group_files/{id}", "getFilesByGroupID");

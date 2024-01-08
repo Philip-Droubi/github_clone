@@ -15,7 +15,6 @@ class GroupLogController extends Controller
     use HelperTrait, GeneralTrait;
     public function index(Request $request)
     {
-        //Omar
         $actions = ["create", "update", "delete"];
         $order = $request->orderBy ?? "importance";
         $desc  = $request->desc ?? "desc";
@@ -30,9 +29,10 @@ class GroupLogController extends Controller
         $logs = $logs->paginate($limit);
         $data  = [];
         $items  = [];
-        foreach ($logs as $log) {
-            $items[] = new LogResource($log);
-        }
+        if ($logs)
+            foreach ($logs as $log) {
+                $items[] = new LogResource($log);
+            }
         $data["items"] = $items;
         $data = $this->setPaginationData($logs, $data);
         return $this->success($data);

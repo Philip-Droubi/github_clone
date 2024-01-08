@@ -21,8 +21,7 @@ return new class extends Migration
             $table->foreignId('reserved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('path');
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete(); //Not possible to create a single file that is included in several groups
-            // because this will lead to problems with deletion and modification ... Note GitHub / GitLab
+            $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
             $table->timestamps();
         });
     }

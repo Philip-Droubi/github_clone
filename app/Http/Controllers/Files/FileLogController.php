@@ -15,13 +15,15 @@ class FileLogController extends Controller
     use HelperTrait, GeneralTrait;
     public function index(Request $request)
     {
-        //Omar
         $actions = ["create", "update", "delete"];
         $order = $request->orderBy ?? "importance";
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 25;
         if ($request->file_key)
-            $logs = FileLog::where("file_id", File::where("file_key", $request->file_key)->first()->id)
+            if (!$file = File::where("file_key", $request->file_key)->first())
+                return $this->fail("File not found", 404);
+        if ($request->file_key)
+            $logs = FileLog::where("file_id", $file->id)
                 ->orderBy($order, $desc);
         else $logs = FileLog::query()
             ->orderBy($order, $desc);
@@ -30,9 +32,10 @@ class FileLogController extends Controller
         $logs = $logs->paginate($limit);
         $data  = [];
         $items  = [];
-        foreach ($logs as $log) {
-            $items[] = new LogResource($log);
-        }
+        if ($logs)
+            foreach ($logs as $log) {
+                $items[] = new LogResource($log);
+            }
         $data["items"] = $items;
         $data = $this->setPaginationData($logs, $data);
         return $this->success($data);
