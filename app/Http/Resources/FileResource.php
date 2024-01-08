@@ -22,7 +22,7 @@ class FileResource extends JsonResource
             "group_name"  => $this->group->name,
             // "path"        => $this->path,
             "reserved_by" => $this->reserved_by,
-            "reserved_by_name" => $this->reservedBy ?? "",
+            "reserved_by_name" => $this->reservedBy ? $this->reservedBy->getFullName() : "",
             "size"        => $this->size . ' KB',
             "type"        => $this->mime,
             "created_by"  => $this->owner->getFullName(),
