@@ -24,7 +24,7 @@ class ContributerResource extends JsonResource
             "first_name" => $user->first_name,
             "last_name" => $user->last_name,
             "full_name" => $user->getFullName(),
-            "img" => is_null($user->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $this->img,
+            "img" => is_null($user->img) ? Config::get('custom.user_default_image') : "storage/assets/" . $user->img,
             "created_at" => Carbon::parse($user->created_at)->format('Y-m-d H:i'),
             "number_of_contributions" => Commit::where(["group_id" => $this->group_id, "commiter_id" => $user->id])->count(),
             "last_contribution_at" => $lastContribution ? Carbon::parse($lastContribution->created_at)->format('Y-m-d H:i:s') : "No contributions yet",

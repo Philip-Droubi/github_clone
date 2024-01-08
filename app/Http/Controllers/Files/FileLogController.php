@@ -21,9 +21,9 @@ class FileLogController extends Controller
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 25;
         if ($request->file_key)
-            $logs = FileLog::whereIn("file_id", File::where("file_key", $request->file_key)->pluck("id")->toArray())
+            $logs = FileLog::where("file_id", File::where("file_key", $request->file_key)->first()->id)
                 ->orderBy($order, $desc);
-        else $logs = FileLog::whereIn("file_id", File::pluck("id")->toArray())
+        else $logs = FileLog::query()
             ->orderBy($order, $desc);
         if (in_array(strtolower($request->action), $actions))
             $logs = $logs->where('action', strtolower($request->action));
