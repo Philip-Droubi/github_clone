@@ -27,10 +27,10 @@ class AuthController extends Controller
         $users = User::query();
         if ($text = $request->search) {
             $users->where(function ($query) use ($text) {
-                $query->where('first_name', 'SOUNDS LIKE', '%' . strtolower($text) . '%')
+                $query->where('first_name', ' LIKE', '%' . strtolower($text) . '%')
                     ->orWhere('last_name', 'like', '%' . strtolower($text) . '%')
                     ->orWhere('account_name', 'like', '%' . strtolower($text) . '%')
-                    ->orWhereRaw("concat(first_name,' ', last_name) SOUNDS LIKE '%$text%' ");
+                    ->orWhereRaw("concat(first_name,' ', last_name) LIKE '%$text%' ");
             });
         }
         $users = $users->paginate($limit);
@@ -135,10 +135,5 @@ class AuthController extends Controller
         $user->save();
         DB::commit();
         return $this->success(new UserResource($user), "Updated successfully!");
-    }
-
-    public function destroy(Request $request)
-    {
-        //
     }
 }

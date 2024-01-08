@@ -25,7 +25,6 @@ class FileController extends Controller
     use GeneralTrait, HelperTrait;
     public function index(Request $requet)
     {
-        //Omar
         $order = $requet->orderBy ?? "name";
         $desc  = $requet->desc ?? "desc";
         $limit = $requet->limit ?? 20;
@@ -79,7 +78,6 @@ class FileController extends Controller
                 "User '@" . $user->account_name . " (" . $user->getFullName() . ")' added " . count($fileCreated) . " files to '" . $group->name . "' group.",
                 $filesObject->pluck("id")->toArray()
             );
-            //Omar
             //Add Log
             if ($files) {
                 foreach ($filesObject as $file) {
@@ -116,15 +114,9 @@ class FileController extends Controller
         return false;
     }
 
-    public function show(string $id)
-    {
-        //
-    }
 
     public function getFilesByGroupID(string $id, Request $request)
     {
-        //Omar
-        //TODO : CHECK IF WITH CAN WORK HERE
         $group = Group::where(['group_key' => $id])->with('contributers')->first();
         if (!$group)
             return $this->fail("Group not found.", 404);
@@ -133,9 +125,10 @@ class FileController extends Controller
         foreach ($group->contributers as $cont) {
             $contributers[] = $cont->user_id;
         }
-        if ($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers)) {
-            return $this->fail("You don't have access to this group files.", 403);
-        }
+        if ((auth()->user()->role != 1))
+            if (($group->created_by != auth()->id() && !$group->is_public && !in_array(auth()->id(), $contributers))) {
+                return $this->fail("You don't have access to this group files.", 403);
+            }
         $order = $request->orderBy ?? "name";
         $desc  = $request->desc ?? "desc";
         $limit = $request->limit ?? 40;
@@ -155,7 +148,6 @@ class FileController extends Controller
 
     public function getUserFiles(Request $request)
     {
-        //Omar
         if (!$user = User::find($request->id ?? auth()->id()))
             return $this->fail("User not found", 404);
         $order = $request->orderBy ?? "name";
@@ -174,28 +166,9 @@ class FileController extends Controller
         return $this->success($data);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
 
     public function replaceFile(FileRequest $request)
     {
-        /**
-         * If request has a file:
-         * [1] Check for file_name
-         * [2] Store file and check if path created
-         * [3] Update file data
-         * [4] Check if file desc changed
-         * ////
-         * if file desc changed
-         * [1] Change file description
-         * [2] Save cahnge
-         * ////
-         * Create a log for the changes
-         * ////
-         * Commit to DB a
-         * return response
-         */
         if (!$file = File::where(["file_key" => $request->file_key, "reserved_by" => auth()->id()])->first()) return $this->fail("File not found!", 404);
         $oldFile = clone $file;
         $fileReplaced = false;
@@ -234,7 +207,6 @@ class FileController extends Controller
 
     public function destroy(Request $request)
     {
-        // Omar
         DB::beginTransaction();
         $file = File::where("file_key", $request->id)->first();
         if (!$file)
@@ -258,19 +230,9 @@ class FileController extends Controller
 
     public function checkIn(FileRequest $request)
     {
-        /** INFO:
-         * Check if I'm in group
-         * Check if file is not reserved by others & exists
-         */
         DB::beginTransaction();
         $files = File::query()->whereIn("file_key", $request->files_keys)->get(); // Get all required files in one query
         $userGroups = GroupUser::where("user_id", auth()->id())->pluck('group_id')->toArray(); // Get all groups id that user belongs to
-        /** INFO:
-         * Why not to check if all files belongs to user groups here?
-         * cause while this action is runing user could be removed from one group or more.
-         * the function will not detect if the user was removed so that it's better to be done inside the foreach loop for each file alone
-         * If an exception happen the DB will not commit (will rollback) and all the files will be free to reserve again.
-         */
         foreach ($files as $file) {
             if (
                 !(in_array($file->group_id, $userGroups)
@@ -292,12 +254,6 @@ class FileController extends Controller
 
     public function checkOut(Request $request) //Take only one file by request
     {
-        /** INFO:
-         * Check if:
-         * File exist
-         * File reserved by this user
-         * File is in one group of that this user is in
-         */
         if (!$file = File::where(["file_key" => $request->file_key, "reserved_by" => auth()->id()])->whereIn("group_id", GroupUser::where("user_id", auth()->id())->pluck('group_id')->toArray())->first()) return $this->fail("File not found!", 400);
         DB::beginTransaction();
         $file->reserved_by = null;
@@ -347,8 +303,8 @@ class FileController extends Controller
         $userGroups = GroupUser::where("user_id", auth()->id())->pluck('group_id')->toArray();
         foreach ($files as $file) {
             if (
-                !(in_array($file->group_id, $userGroups) //Check if user can access each file
-                    // && ($file->reserved_by == null || $file->reserved_by == auth()->id())) // if only none reserved files are downloadable
+                !(in_array($file->group_id, $userGroups) ||
+                    auth()->user()->role == 1
                 )
             )
                 throw new Exception("You have no access to this file");

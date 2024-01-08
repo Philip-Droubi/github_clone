@@ -128,11 +128,5 @@ trait HelperTrait
         $data['perPage'] = $objects->perPage();
         $data['currentPage'] = $objects->currentPage();
         return $data;
-        // return [
-        //     'last_page' => $objects->lastPage(),
-        //     'total' => $objects->total(),
-        //     'currentPage' => $objects->currentPage(),
-        //     'perPage' => $objects->perPage(),
-        // ];
     }
 }
