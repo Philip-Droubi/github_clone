@@ -33,5 +33,11 @@ class Handler extends ExceptionHandler
                 return $this->fail("Access denied", 401);
             }
         });
+
+        $this->renderable(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, $request) {
+            if ($request->is('api/*')) {
+                return $this->fail("Too many requests", 400);
+            }
+        });
     }
 }

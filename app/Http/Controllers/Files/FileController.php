@@ -65,7 +65,9 @@ class FileController extends Controller
                         "updated_at" => Carbon::now()->format("Y-m-d H:i:s"),
                     ];
                     $desc_id++;
-                } else throw new Exception("Failed to store files");
+                }
+                return $this->fail("Failed to store files");
+                //  else throw new Exception("Failed to store files");
             }
             $files = File::insert($fileCreated);
             //Create commit
@@ -186,7 +188,7 @@ class FileController extends Controller
                         "updated_at" => Carbon::now()->format("Y-m-d H:i:s"),
                     ]);
                     $fileReplaced = true;
-                } else throw new Exception("Failed to store files");
+                } else return $this->fail("Failed to store files");
             } else return $this->fail("One or more files have the same 'name.extension', upload rejected!");
         }
         if ($request->exists('desc')) {
@@ -237,7 +239,7 @@ class FileController extends Controller
             if (
                 !(in_array($file->group_id, $userGroups)
                     && ($file->reserved_by == null || $file->reserved_by == auth()->id()))
-            ) throw new Exception("You have no access to this file");
+            ) return $this->fail("You have no access to this file");
             $file->reserved_by = auth()->id();
             $file->save();
             $this->createFileLog(
@@ -307,7 +309,8 @@ class FileController extends Controller
                     auth()->user()->role == 1
                 )
             )
-                throw new Exception("You have no access to this file");
+                return $this->fail("You have no access to this file");
+            // throw new Exception("You have no access to this file");
         }
         if ($zipFile = $this->createZipFile(substr($files[0]->name, 0, 10) . "_" . Carbon::now()->format("Y_m_d_H_i"), $files))
             return response()->download($zipFile)->deleteFileAfterSend(true);
