@@ -244,7 +244,8 @@ class GroupController extends Controller
                 } else {
                     $user = User::find($id);
                     $userName = $user->first_name . " " . $user->last_name;
-                    throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
+                    return $this->fail("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
+                    // throw new Exception("The user '" . $userName . "' reserved a file within the group,the deletion operation could not be done");
                 }
             }
         // Add new users
