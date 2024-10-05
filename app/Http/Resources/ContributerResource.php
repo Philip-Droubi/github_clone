@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Models\Group\Commit;
-use App\Models\Group\Group;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;

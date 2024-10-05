@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Traits\GeneralTrait;
 use Illuminate\Support\Facades\Config;
 
-
 class CheckApiKey
 {
     use GeneralTrait;

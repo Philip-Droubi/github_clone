@@ -5,7 +5,6 @@ use App\Http\Controllers\Files\FileController;
 use App\Http\Controllers\Files\FileLogController;
 use App\Http\Controllers\Groups\GroupLogController;
 use App\Http\Controllers\Groups\GroupController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // No Auth Needed

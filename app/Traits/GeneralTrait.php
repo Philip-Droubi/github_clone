@@ -2,8 +2,6 @@
 
 namespace App\Traits;
 
-use Illuminate\Http\Request;
-
 trait GeneralTrait
 {
     protected function success($data = [], $message = 'ok', $status = 200)

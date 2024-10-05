@@ -12,13 +12,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Exception;
 use App\Traits\GeneralTrait;
 use App\Traits\HelperTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-
 
 class FileController extends Controller
 {

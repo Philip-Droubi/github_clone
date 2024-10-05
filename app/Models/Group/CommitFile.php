@@ -3,7 +3,6 @@
 namespace App\Models\Group;
 
 use App\Models\File\File;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
