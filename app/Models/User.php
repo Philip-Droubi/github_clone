@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\File\File;
 use App\Models\File\FileLog;
 use App\Models\Group\Commit;

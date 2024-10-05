@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Config;
 
 class UserResource extends JsonResource
 {
-
     public function toArray(Request $request): array
     {
         return [

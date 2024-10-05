@@ -6,7 +6,6 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Traits\GeneralTrait;
-use Exception;
 use Illuminate\Support\Facades\DB;
 
 class TryCatchRequest
